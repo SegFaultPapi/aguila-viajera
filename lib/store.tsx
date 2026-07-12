@@ -21,6 +21,9 @@ interface StoreState {
   guardarPerfilSalud: (perfil: Omit<PerfilSalud, "actualizadoEn">) => void;
   marcarAsistencia: (inscripcionId: string, asistio: boolean) => void;
   usuarioById: (id: string) => Usuario | undefined;
+  usuarioPorTelefono: (telefono: string) => Usuario | undefined;
+  registrarUsuario: (data: Omit<Usuario, "id">) => Usuario;
+  vincularFamiliar: (adultoId: string, familiarId: string) => void;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -32,7 +35,7 @@ function nextId(prefix: string) {
 }
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [usuarios] = useState<Usuario[]>(USUARIOS);
+  const [usuarios, setUsuarios] = useState<Usuario[]>(USUARIOS);
   const [excursiones, setExcursiones] = useState<Excursion[]>(EXCURSIONES);
   const [inscripciones, setInscripciones] = useState<Inscripcion[]>(INSCRIPCIONES);
   const [perfilesSalud, setPerfilesSalud] = useState<PerfilSalud[]>(PERFILES_SALUD);
@@ -46,6 +49,44 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const usuarioById = useCallback(
     (id: string) => usuarios.find((u) => u.id === id),
     [usuarios]
+  );
+
+  const normalizarTelefono = (t: string) => t.replace(/\D/g, "");
+
+  const usuarioPorTelefono = useCallback(
+    (telefono: string) => {
+      const norm = normalizarTelefono(telefono);
+      return usuarios.find((u) => normalizarTelefono(u.telefono) === norm);
+    },
+    [usuarios]
+  );
+
+  const registrarUsuario = useCallback(
+    (data: Omit<Usuario, "id">): Usuario => {
+      const nuevo: Usuario = { ...data, id: nextId("u") };
+      setUsuarios((prev) => [...prev, nuevo]);
+      return nuevo;
+    },
+    []
+  );
+
+  const vincularFamiliar = useCallback(
+    (adultoId: string, familiarId: string) => {
+      setUsuarios((prev) =>
+        prev.map((u) => {
+          if (u.id === adultoId) {
+            const vinculados = u.familiaresVinculados ?? [];
+            if (vinculados.includes(familiarId)) return u;
+            return { ...u, familiaresVinculados: [...vinculados, familiarId] };
+          }
+          if (u.id === familiarId) {
+            return { ...u, cuidaA: adultoId };
+          }
+          return u;
+        })
+      );
+    },
+    []
   );
 
   const perfilDe = useCallback(
@@ -155,6 +196,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     guardarPerfilSalud,
     marcarAsistencia,
     usuarioById,
+    usuarioPorTelefono,
+    registrarUsuario,
+    vincularFamiliar,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -11,7 +11,14 @@ export function nivelAccesibilidad(ex: Excursion): {
   return { emoji: "♿⚠️", label: "Ruta con varios obstáculos" };
 }
 
-export function AccesibilidadBadge({ excursion }: { excursion: Excursion }) {
+export function AccesibilidadBadge({
+  excursion,
+  icon = true,
+}: {
+  excursion: Excursion;
+  /** Set to false on the emoji-free landing page. */
+  icon?: boolean;
+}) {
   const { emoji, label } = nivelAccesibilidad(excursion);
   const { tieneEscaleras, tienePuentesSinRampa, terrenoIrregular } = excursion.accesibilidad;
   const problemas = [tieneEscaleras, tienePuentesSinRampa, terrenoIrregular].filter(Boolean).length;
@@ -21,7 +28,7 @@ export function AccesibilidadBadge({ excursion }: { excursion: Excursion }) {
 
   return (
     <span className={`badge ${claseExtra}`} style={estiloAlerta}>
-      <span aria-hidden>{emoji}</span> {label}
+      {icon && <span aria-hidden>{emoji}</span>} {label}
     </span>
   );
 }

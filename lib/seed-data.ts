@@ -89,6 +89,8 @@ export const EXCURSIONES: Excursion[] = [
     estado: "publicada",
     creadoEn: "2026-06-01T09:00:00-06:00",
     imagenEmoji: "🏛️",
+    descripcionLarga:
+      "Uno de los recintos culturales más importantes de México, con salas dedicadas a las culturas prehispánicas y paradas de descanso programadas.",
     historial: [
       {
         fecha: "2026-06-01T09:00:00-06:00",
@@ -119,6 +121,8 @@ export const EXCURSIONES: Excursion[] = [
     estado: "publicada",
     creadoEn: "2026-06-05T11:00:00-06:00",
     imagenEmoji: "🌳",
+    descripcionLarga:
+      "Recorrido en trajinera por los canales y chinampas de Xochimilco, patrimonio natural de la Ciudad de México, con tiempo de descanso a la sombra.",
     historial: [
       {
         fecha: "2026-06-05T11:00:00-06:00",
@@ -149,6 +153,8 @@ export const EXCURSIONES: Excursion[] = [
     estado: "publicada",
     creadoEn: "2026-06-10T08:00:00-06:00",
     imagenEmoji: "⛪",
+    descripcionLarga:
+      "Visita al recinto religioso más visitado del país, con acceso facilitado para el grupo y tiempo libre dentro del recorrido.",
     historial: [
       {
         fecha: "2026-06-10T08:00:00-06:00",

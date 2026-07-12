@@ -221,6 +221,23 @@ h1, h2, h3 {
   flex-shrink: 0;
 }
 
+/* Blank placeholder for a future real photo — labeled so it's obvious
+   at a glance where content still needs to be dropped in. */
+.placeholder-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1.5px dashed var(--color-border);
+  background: var(--color-bg-alt);
+  color: var(--color-ink-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* ── Animations ─────────────────────────────────────────── */
 
 @keyframes fade-up {

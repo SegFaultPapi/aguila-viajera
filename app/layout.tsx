@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { StoreProvider } from "@/lib/store";
+import { Providers } from "@/lib/providers";
 
 export const metadata: Metadata = {
   title: "Águila Viajera — COPACO Iztapalapa",
@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full antialiased">
       <body className="min-h-full flex flex-col" style={{ background: "var(--color-bg)" }}>
-        <StoreProvider>{children}</StoreProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

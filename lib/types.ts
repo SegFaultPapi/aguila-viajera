@@ -13,6 +13,7 @@ export interface Usuario {
   rol: Rol;
   telefono: string;
   colonia: string;
+  email?: string;
   familiaresVinculados?: string[];
   cuidaA?: string;
 }
@@ -67,6 +68,7 @@ export interface Excursion {
   estado: "publicada" | "cancelada" | "completada";
   creadoEn: string;
   imagenEmoji: string;
+  descripcionLarga?: string;
   historial: RegistroHistorial[];
 }
 
