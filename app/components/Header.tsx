@@ -16,18 +16,22 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-10 border-b bg-white" style={{ borderColor: "var(--color-border)" }}>
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="flex flex-shrink-0 items-center gap-1.5 text-lg font-extrabold" style={{ color: "var(--color-primary)" }}>
+      <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <Link
+          href="/"
+          className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap text-lg font-extrabold"
+          style={{ color: "var(--color-primary)" }}
+        >
           <span aria-hidden>🦅</span> Águila Viajera
         </Link>
-        <nav className="flex flex-nowrap items-center gap-4 overflow-x-auto text-sm font-medium">
+        <nav className="flex flex-nowrap items-center gap-4 overflow-x-auto whitespace-nowrap text-sm font-medium">
           {NAV_LINKS.map((link) => {
             const active = pathname?.startsWith(link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={active ? "underline underline-offset-4" : "text-inherit"}
+                className={`flex-shrink-0 ${active ? "underline underline-offset-4" : "text-inherit"}`}
                 style={{ color: active ? "var(--color-primary)" : "var(--color-ink-soft)" }}
               >
                 {link.label}
