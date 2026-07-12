@@ -67,11 +67,11 @@ function StatCard({ valor, label, suffix = "", delay = 0 }: { valor: number; lab
       className="card text-center reveal"
       style={{ animationDelay: `${delay}ms`, transitionDelay: `${delay}ms` }}
     >
-      <p className="text-4xl font-extrabold" style={{ color: "var(--color-accent)" }}>
+      <p className="font-display text-4xl font-extrabold" style={{ color: "var(--color-accent-dark)" }}>
         {count.toLocaleString("es-MX")}
         {suffix}
       </p>
-      <p className="mt-2 text-sm" style={{ color: "var(--color-ink-soft)" }}>
+      <p className="mt-2 text-base" style={{ color: "var(--color-ink-soft)" }}>
         {label}
       </p>
     </div>
@@ -123,11 +123,10 @@ function TopBar() {
       style={{ borderColor: "var(--color-border)", background: "var(--color-bg)" }}
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
-        <span className="text-xl font-extrabold" style={{ color: "var(--color-primary)" }}>
+        <span className="font-display text-xl font-extrabold tracking-tight" style={{ color: "var(--color-primary)" }}>
           Águila Viajera
         </span>
         <div className="flex items-center gap-3">
-          <span className="badge badge-accent hidden sm:inline-flex">Prototipo · COPACO</span>
           <Link href="/excursiones" className="btn-secondary text-sm px-4 py-2" style={{ minHeight: "40px" }}>
             Entrar a la app
           </Link>
@@ -142,13 +141,13 @@ function Hero() {
     <section
       className="relative overflow-hidden"
       style={{
-        background: "linear-gradient(150deg, #08402f 0%, #0d6b4f 55%, #0f7a5a 100%)",
+        background: "linear-gradient(150deg, #0369a1 0%, #0284c7 55%, #0ea5e9 100%)",
         color: "white",
       }}
     >
       <div
         className="orb animate-blob"
-        style={{ width: 480, height: 480, top: -120, right: -100, background: "rgba(193,97,28,0.18)" }}
+        style={{ width: 480, height: 480, top: -120, right: -100, background: "rgba(234,179,8,0.22)" }}
       />
       <div
         className="orb animate-blob delay-400"
@@ -169,11 +168,10 @@ function Hero() {
           </h1>
 
           <p
-            className="mx-auto max-w-md text-lg leading-relaxed sm:mx-0 animate-fade-up delay-200"
-            style={{ color: "rgba(255,255,255,0.88)" }}
+            className="mx-auto max-w-md text-xl leading-relaxed sm:mx-0 animate-fade-up delay-200"
+            style={{ color: "rgba(255,255,255,0.97)" }}
           >
-            Registro de salud, inscripción y coordinación en un solo lugar — sin depender solo de
-            WhatsApp.
+            Inscríbete, comparte tu perfil de salud y viaja con respaldo. Todo en un solo lugar.
           </p>
 
           <div className="mx-auto flex flex-col gap-3 sm:mx-0 sm:flex-row animate-fade-up delay-300">
@@ -200,25 +198,6 @@ function Hero() {
   );
 }
 
-function ImpactStats() {
-  return (
-    <section className="px-5 py-16" style={{ background: "var(--color-bg)" }}>
-      <div className="mx-auto max-w-5xl">
-        <p
-          className="reveal text-center text-sm font-semibold uppercase tracking-widest mb-8"
-          style={{ color: "var(--color-accent)" }}
-        >
-          El problema que resolvemos
-        </p>
-        <div className="grid gap-6 sm:grid-cols-3">
-          <StatCard valor={1850000} suffix="+" label="habitantes en Iztapalapa, ~30% adultos mayores" delay={0} />
-          <StatCard valor={12000} suffix="+" label="voluntarios organizados en COPACO" delay={120} />
-          <StatCard valor={750} suffix="+" label="muertes en 3 años por traslados mal gestionados" delay={240} />
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ── Rotating image + description ───────────────────────── */
 
@@ -244,7 +223,7 @@ function MomentosCarousel() {
       <div className="mx-auto max-w-5xl">
         <p
           className="reveal text-center text-sm font-semibold uppercase tracking-widest mb-8"
-          style={{ color: "var(--color-accent)" }}
+          style={{ color: "var(--color-primary-dark)" }}
         >
           Así se ven nuestras excursiones
         </p>
@@ -257,8 +236,8 @@ function MomentosCarousel() {
             className="max-w-sm animate-fade-in"
           />
           <div key={`text-${activo}`} className="flex-1 animate-fade-in">
-            <h3 className="text-2xl font-extrabold">{momento.titulo}</h3>
-            <p className="mt-2 text-lg" style={{ color: "var(--color-ink-soft)" }}>
+            <h3 className="text-3xl font-extrabold">{momento.titulo}</h3>
+            <p className="mt-3 text-xl" style={{ color: "var(--color-ink-soft)" }}>
               {momento.detalle}
             </p>
           </div>
@@ -299,8 +278,8 @@ function ComoFunciona() {
             <div key={paso.titulo} className="reveal card flex gap-4" style={{ transitionDelay: `${i * 80}ms` }}>
               <span className="step-number">{i + 1}</span>
               <div>
-                <p className="font-bold">{paso.titulo}</p>
-                <p className="mt-1" style={{ color: "var(--color-ink-soft)" }}>
+                <p className="text-lg font-bold">{paso.titulo}</p>
+                <p className="mt-1 text-base" style={{ color: "var(--color-ink-soft)" }}>
                   {paso.detalle}
                 </p>
               </div>
@@ -336,11 +315,10 @@ function DestinosCards({
               style={{ transitionDelay: `${i * 80}ms` }}
             >
               <PlaceholderImage label={ex.destino} aspect="aspect-[4/3]" />
-              <h3 className="text-lg font-extrabold">{ex.destino}</h3>
-              <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+              <h3 className="text-xl font-extrabold">{ex.destino}</h3>
+              <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
                 {ex.descripcionLarga}
               </p>
-              <AccesibilidadBadge excursion={ex} icon={false} />
             </Link>
           ))}
           {excursiones.length === 0 && (
@@ -361,7 +339,7 @@ function Garantias() {
   ];
 
   return (
-    <section className="px-5 py-16" style={{ background: "var(--color-bg)" }}>
+    <section className="px-5 py-16" style={{ background: "var(--color-bg-alt)" }}>
       <div className="mx-auto max-w-5xl">
         <h2 className="reveal text-center text-3xl font-extrabold">Diseñado con COPACO</h2>
 
@@ -374,8 +352,8 @@ function Garantias() {
                 aria-hidden
               />
               <div>
-                <p className="font-bold">{p.titulo}</p>
-                <p className="mt-1 text-sm" style={{ color: "var(--color-ink-soft)" }}>
+                <p className="text-lg font-bold">{p.titulo}</p>
+                <p className="mt-1 text-base" style={{ color: "var(--color-ink-soft)" }}>
                   {p.detalle}
                 </p>
               </div>
@@ -406,14 +384,14 @@ function CoordinadorCTA() {
 
         <div className="reveal-right flex-1 text-white flex flex-col gap-4">
           <h2 className="text-3xl font-extrabold">Para coordinadores COPACO</h2>
-          <p style={{ color: "rgba(255,255,255,0.85)" }}>
+          <p style={{ color: "rgba(255,255,255,0.97)" }}>
             Crea una excursión, revisa el perfil médico de cada participante y lleva el check-in
             desde tu celular.
           </p>
           <ul className="flex flex-col gap-2">
             {items.map((item) => (
-              <li key={item} className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.9)" }}>
-                <span style={{ color: "var(--color-accent)" }}>
+              <li key={item} className="flex items-center gap-2 text-base" style={{ color: "rgba(255,255,255,0.97)" }}>
+                <span style={{ color: "white" }}>
                   <CheckIcon />
                 </span>
                 {item}
@@ -439,9 +417,9 @@ function Footer() {
     <footer className="px-5 py-10" style={{ background: "var(--color-primary-dark)", color: "white" }}>
       <div className="mx-auto max-w-5xl flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-2 max-w-sm">
-          <p className="text-xl font-extrabold">Águila Viajera</p>
-          <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
-            Proyecto comunitario digital para COPACO, Iztapalapa · Prototipo de demostración.
+          <p className="font-display text-xl font-extrabold tracking-tight">Águila Viajera</p>
+          <p className="text-base" style={{ color: "rgba(255,255,255,0.9)" }}>
+            Proyecto comunitario digital para COPACO, Iztapalapa.
           </p>
         </div>
 
@@ -451,7 +429,7 @@ function Footer() {
             { label: "Mi perfil de salud", href: "/perfil-salud" },
             { label: "Nueva excursión", href: "/coordinador/nueva-excursion" },
           ].map((l) => (
-            <Link key={l.href} href={l.href} className="text-sm hover:underline" style={{ color: "rgba(255,255,255,0.8)" }}>
+            <Link key={l.href} href={l.href} className="text-base hover:underline" style={{ color: "rgba(255,255,255,0.92)" }}>
               {l.label}
             </Link>
           ))}
@@ -476,10 +454,9 @@ export default function LandingPage() {
     <div className="flex flex-1 flex-col">
       <TopBar />
       <Hero />
-      <ImpactStats />
+      <DestinosCards excursiones={destinos} />
       <MomentosCarousel />
       <ComoFunciona />
-      <DestinosCards excursiones={destinos} />
       <Garantias />
       <CoordinadorCTA />
       <Footer />
