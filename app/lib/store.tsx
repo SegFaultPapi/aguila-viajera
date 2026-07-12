@@ -1,0 +1,167 @@
+"use client";
+
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { EXCURSIONES, INSCRIPCIONES, PERFILES_SALUD, USUARIOS } from "./seed-data";
+import { Excursion, Inscripcion, PerfilSalud, Usuario } from "./types";
+
+interface StoreState {
+  usuarios: Usuario[];
+  excursiones: Excursion[];
+  inscripciones: Inscripcion[];
+  perfilesSalud: PerfilSalud[];
+  currentUserId: string;
+  setCurrentUserId: (id: string) => void;
+  currentUser: Usuario;
+  perfilDe: (usuarioId: string) => PerfilSalud | undefined;
+  inscripcionesDe: (excursionId: string) => Inscripcion[];
+  inscripcionVigente: (excursionId: string, usuarioId: string) => Inscripcion | undefined;
+  inscribir: (excursionId: string, usuarioId: string, llevaAcompanante: boolean) => Inscripcion;
+  cancelarInscripcion: (inscripcionId: string) => void;
+  crearExcursion: (data: Omit<Excursion, "id" | "estado" | "creadoEn" | "historial">) => Excursion;
+  guardarPerfilSalud: (perfil: Omit<PerfilSalud, "actualizadoEn">) => void;
+  marcarAsistencia: (inscripcionId: string, asistio: boolean) => void;
+  usuarioById: (id: string) => Usuario | undefined;
+}
+
+const StoreContext = createContext<StoreState | null>(null);
+
+let idCounter = 1000;
+function nextId(prefix: string) {
+  idCounter += 1;
+  return `${prefix}-${idCounter}`;
+}
+
+export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const [usuarios] = useState<Usuario[]>(USUARIOS);
+  const [excursiones, setExcursiones] = useState<Excursion[]>(EXCURSIONES);
+  const [inscripciones, setInscripciones] = useState<Inscripcion[]>(INSCRIPCIONES);
+  const [perfilesSalud, setPerfilesSalud] = useState<PerfilSalud[]>(PERFILES_SALUD);
+  const [currentUserId, setCurrentUserId] = useState<string>("u-elena");
+
+  const currentUser = useMemo(
+    () => usuarios.find((u) => u.id === currentUserId) ?? usuarios[0],
+    [usuarios, currentUserId]
+  );
+
+  const usuarioById = useCallback(
+    (id: string) => usuarios.find((u) => u.id === id),
+    [usuarios]
+  );
+
+  const perfilDe = useCallback(
+    (usuarioId: string) => perfilesSalud.find((p) => p.usuarioId === usuarioId),
+    [perfilesSalud]
+  );
+
+  const inscripcionesDe = useCallback(
+    (excursionId: string) => inscripciones.filter((i) => i.excursionId === excursionId),
+    [inscripciones]
+  );
+
+  const inscripcionVigente = useCallback(
+    (excursionId: string, usuarioId: string) =>
+      inscripciones.find(
+        (i) => i.excursionId === excursionId && i.usuarioId === usuarioId && i.estado !== "cancelada"
+      ),
+    [inscripciones]
+  );
+
+  const inscribir = useCallback(
+    (excursionId: string, usuarioId: string, llevaAcompanante: boolean) => {
+      const excursion = excursiones.find((e) => e.id === excursionId)!;
+      const confirmadas = inscripciones.filter(
+        (i) => i.excursionId === excursionId && i.estado === "confirmada"
+      ).length;
+      const estado = confirmadas < excursion.cupoMaximo ? "confirmada" : "lista_espera";
+      const nueva: Inscripcion = {
+        id: nextId("in"),
+        excursionId,
+        usuarioId,
+        inscritoPorId: currentUserId,
+        estado,
+        llevaAcompanante,
+        asistenciaConfirmada: false,
+        creadoEn: new Date(2026, 5, 15).toISOString(),
+      };
+      setInscripciones((prev) => [...prev, nueva]);
+      return nueva;
+    },
+    [excursiones, inscripciones, currentUserId]
+  );
+
+  const cancelarInscripcion = useCallback((inscripcionId: string) => {
+    setInscripciones((prev) =>
+      prev.map((i) => (i.id === inscripcionId ? { ...i, estado: "cancelada" } : i))
+    );
+  }, []);
+
+  const crearExcursion = useCallback(
+    (data: Omit<Excursion, "id" | "estado" | "creadoEn" | "historial">) => {
+      const ahora = new Date(2026, 5, 20).toISOString();
+      const nueva: Excursion = {
+        ...data,
+        id: nextId("ex"),
+        estado: "publicada",
+        creadoEn: ahora,
+        historial: [
+          {
+            fecha: ahora,
+            autorId: data.coordinadorId,
+            accion: "Excursión creada y publicada",
+          },
+        ],
+      };
+      setExcursiones((prev) => [nueva, ...prev]);
+      return nueva;
+    },
+    []
+  );
+
+  const guardarPerfilSalud = useCallback(
+    (perfil: Omit<PerfilSalud, "actualizadoEn">) => {
+      const ahora = new Date(2026, 5, 20).toISOString();
+      setPerfilesSalud((prev) => {
+        const existe = prev.some((p) => p.usuarioId === perfil.usuarioId);
+        const actualizado: PerfilSalud = { ...perfil, actualizadoEn: ahora };
+        if (existe) {
+          return prev.map((p) => (p.usuarioId === perfil.usuarioId ? actualizado : p));
+        }
+        return [...prev, actualizado];
+      });
+    },
+    []
+  );
+
+  const marcarAsistencia = useCallback((inscripcionId: string, asistio: boolean) => {
+    setInscripciones((prev) =>
+      prev.map((i) => (i.id === inscripcionId ? { ...i, asistenciaConfirmada: asistio } : i))
+    );
+  }, []);
+
+  const value: StoreState = {
+    usuarios,
+    excursiones,
+    inscripciones,
+    perfilesSalud,
+    currentUserId,
+    setCurrentUserId,
+    currentUser,
+    perfilDe,
+    inscripcionesDe,
+    inscripcionVigente,
+    inscribir,
+    cancelarInscripcion,
+    crearExcursion,
+    guardarPerfilSalud,
+    marcarAsistencia,
+    usuarioById,
+  };
+
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+export function useStore() {
+  const ctx = useContext(StoreContext);
+  if (!ctx) throw new Error("useStore debe usarse dentro de StoreProvider");
+  return ctx;
+}
