@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { AccesibilidadBadge } from "@/components/AccesibilidadIcon";
 import { BackButton } from "@/components/BackButton";
 
@@ -430,6 +431,7 @@ export default function DetalleExcursion() {
     usuarioById,
   } = useStore();
 
+  const { toast } = useToast();
   const excursion = excursiones.find((e) => e.id === id);
   const [llevaAcompanante, setLlevaAcompanante] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
@@ -481,13 +483,19 @@ export default function DetalleExcursion() {
     excursion.estado === "reprogramada" && inscripcion?.respuestaReprogramacion === "pendiente";
 
   function handleInscribir() {
-    inscribir(excursion!.id, usuarioObjetivo.id, llevaAcompanante);
+    const resultado = inscribir(excursion!.id, usuarioObjetivo.id, llevaAcompanante);
     setConfirmando(true);
+    toast(
+      resultado.estado === "lista_espera"
+        ? `${usuarioObjetivo.nombre} agregado a lista de espera`
+        : `¡${usuarioObjetivo.nombre} está inscrito!`
+    );
   }
 
   function handleCancelarInscripcion() {
     if (inscripcion) cancelarInscripcion(inscripcion.id);
     setCancelando(false);
+    toast("Inscripción cancelada", "info");
   }
 
   return (

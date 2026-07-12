@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Excursion, Inscripcion } from "@/lib/types";
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -307,6 +308,7 @@ export default function MisExcursiones() {
     cancelarInscripcion,
     responderReprogramacion,
   } = useStore();
+  const { toast } = useToast();
 
   // Para familiar: también mostrar las inscripciones del adulto que cuidan
   const idsSeguidos: string[] = [currentUser.id];
@@ -382,10 +384,19 @@ export default function MisExcursiones() {
               excursion={excursion}
               paraUsuarioNombre={paraUsuario?.nombre ?? ""}
               mostrarPara={mostrarPara && paraUsuario?.id !== currentUser.id}
-              onCancelar={() => cancelarInscripcion(inscripcion.id)}
-              onResponderReprogramacion={(r) =>
-                responderReprogramacion(inscripcion.id, r)
-              }
+              onCancelar={() => {
+                cancelarInscripcion(inscripcion.id);
+                toast("Reserva cancelada", "info");
+              }}
+              onResponderReprogramacion={(r) => {
+                responderReprogramacion(inscripcion.id, r);
+                toast(
+                  r === "confirmada"
+                    ? "Confirmaste tu asistencia a la nueva fecha"
+                    : "Reserva cancelada por reprogramación",
+                  r === "confirmada" ? "success" : "info"
+                );
+              }}
             />
           ))}
         </div>

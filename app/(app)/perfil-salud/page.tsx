@@ -2,10 +2,115 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
+import { useToast } from "@/lib/toast";
 import { Medicamento, Movilidad } from "@/lib/types";
 import { PlaceholderImage } from "@/components/PlaceholderImage";
 
 const CONDICIONES_COMUNES = ["Diabetes", "Hipertensión", "Demencia senil", "Cardiopatía"];
+
+/* ── ProgressRing SVG ────────────────────────────────────── */
+
+function ProgressRing({ pct }: { pct: number }) {
+  const size = 64;
+  const strokeWidth = 6;
+  const r = (size - strokeWidth) / 2;
+  const circum = 2 * Math.PI * r;
+  const dash = Math.max(0, Math.min(1, pct / 100)) * circum;
+  const isComplete = pct >= 100;
+
+  return (
+    <svg width={size} height={size} aria-hidden style={{ flexShrink: 0 }}>
+      {/* Track */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="var(--color-bg-alt)"
+        strokeWidth={strokeWidth}
+      />
+      {/* Fill — rotated so it starts from top */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={isComplete ? "var(--color-success)" : "var(--color-primary)"}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circum}`}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        style={{ transition: "stroke-dasharray 0.5s ease, stroke 0.3s ease" }}
+      />
+      {/* Porcentaje centrado */}
+      <text
+        x="50%"
+        y="50%"
+        dominantBaseline="central"
+        textAnchor="middle"
+        style={{
+          fontSize: "0.8rem",
+          fontWeight: 800,
+          fontFamily: "var(--font-sans)",
+          fill: isComplete ? "var(--color-success)" : "var(--color-primary)",
+        }}
+      >
+        {Math.round(pct)}%
+      </text>
+    </svg>
+  );
+}
+
+/* ── Completitud del perfil ──────────────────────────────── */
+
+interface CheckItem {
+  label: string;
+  done: boolean;
+}
+
+function PerfilProgress({ checks }: { checks: CheckItem[] }) {
+  const done = checks.filter((c) => c.done).length;
+  const pct = (done / checks.length) * 100;
+  const isComplete = done === checks.length;
+
+  return (
+    <div
+      className="card flex items-center gap-4"
+      style={{
+        borderColor: isComplete ? "var(--color-success)" : "var(--color-border)",
+        background: isComplete ? "var(--color-success-bg)" : "var(--color-card)",
+      }}
+    >
+      <ProgressRing pct={pct} />
+      <div className="flex-1 min-w-0">
+        <p
+          className="text-base font-extrabold mb-2"
+          style={{ color: isComplete ? "var(--color-success)" : "var(--color-ink)" }}
+        >
+          {isComplete ? "Perfil completo ✓" : `${done} de ${checks.length} secciones listas`}
+        </p>
+        <ul className="flex flex-col gap-1">
+          {checks.map((c) => (
+            <li key={c.label} className="flex items-center gap-2 text-sm font-semibold">
+              <span
+                style={{
+                  color: c.done ? "var(--color-success)" : "var(--color-ink-soft)",
+                  flexShrink: 0,
+                  lineHeight: 1,
+                }}
+              >
+                {c.done ? "✓" : "○"}
+              </span>
+              <span style={{ color: c.done ? "var(--color-ink)" : "var(--color-ink-soft)" }}>
+                {c.label}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
 const MOVILIDAD_OPCIONES: [Movilidad, string, string][] = [
   ["independiente", "🚶", "Independiente"],
@@ -41,6 +146,7 @@ function SeccionCard({
 
 export default function PerfilSaludPage() {
   const { currentUser, usuarios, perfilDe, guardarPerfilSalud } = useStore();
+  const { toast } = useToast();
 
   const usuarioObjetivo = useMemo(() => {
     if (currentUser.rol === "familiar" && currentUser.cuidaA) {
@@ -59,8 +165,26 @@ export default function PerfilSaludPage() {
   const [contactoNombre, setContactoNombre] = useState(perfilExistente?.contactoEmergencia.nombre ?? "");
   const [contactoTelefono, setContactoTelefono] = useState(perfilExistente?.contactoEmergencia.telefono ?? "");
   const [contactoRelacion, setContactoRelacion] = useState(perfilExistente?.contactoEmergencia.relacion ?? "");
-  const [guardado, setGuardado] = useState(false);
   const [cargando, setCargando] = useState(false);
+
+  // Completitud del perfil — se recalcula en tiempo real mientras el usuario llena el form
+  const checks: CheckItem[] = [
+    {
+      label: "Movilidad seleccionada",
+      done: true, // siempre tiene default
+    },
+    {
+      label: "Contacto de emergencia",
+      done:
+        contactoNombre.trim().length > 0 &&
+        contactoTelefono.trim().length > 0 &&
+        contactoRelacion.trim().length > 0,
+    },
+    {
+      label: "Guardado al menos una vez",
+      done: !!perfilExistente,
+    },
+  ];
 
   function toggleCondicion(c: string) {
     setCondiciones((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -97,8 +221,7 @@ export default function PerfilSaludPage() {
     });
     setTimeout(() => {
       setCargando(false);
-      setGuardado(true);
-      setTimeout(() => setGuardado(false), 3000);
+      toast("Perfil guardado correctamente");
     }, 600);
   }
 
@@ -125,6 +248,9 @@ export default function PerfilSaludPage() {
           )}
         </div>
       </div>
+
+      {/* Indicador de completitud */}
+      <PerfilProgress checks={checks} />
 
       {/* Aviso de privacidad */}
       <div className="info-box flex gap-2 items-start text-sm">
@@ -312,14 +438,9 @@ export default function PerfilSaludPage() {
 
       {/* Botón guardar sticky */}
       <div
-        className="sticky bottom-20 flex flex-col gap-2"
+        className="sticky bottom-20"
         style={{ filter: "drop-shadow(0 -4px 12px rgba(0,0,0,0.08))" }}
       >
-        {guardado && (
-          <div className="success-box flex items-center gap-2 text-sm">
-            <span>✅</span> Perfil guardado correctamente.
-          </div>
-        )}
         <button
           type="submit"
           className="btn-primary w-full text-lg"
