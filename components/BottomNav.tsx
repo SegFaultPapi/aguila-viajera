@@ -25,7 +25,7 @@ export function BottomNav() {
       ]
     : [
         { href: "/excursiones", icon: "🗺️", label: "Excursiones" },
-        { href: "/perfil-salud", icon: "🩺", label: "Mi salud" },
+        { href: "/perfil-salud", icon: "🩺", label: "Mi información" },
       ];
 
   function isActive(href: string) {

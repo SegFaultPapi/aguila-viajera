@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { AnclajeBlockchain, Movilidad } from "@/lib/types";
 import { BackButton } from "@/components/BackButton";
 import {
-  contenidoCanonicoExcursion,
+  contenidoCanonicoActa,
   formatearHash,
   hashObjeto,
 } from "@/lib/crypto";
@@ -41,12 +41,26 @@ export default function PanelParticipantesPage() {
 
   const excursion = excursiones.find((e) => e.id === id);
 
-  // Calcular hash del acta al cargar la página
+  // Calcular hash del acta — se recalcula cuando cambia la asistencia
+  // Usa contenidoCanonicoActa: nombres y datos personales NUNCA tocan la cadena,
+  // solo el coordinadorId (firmante institucional), el conteo y una huella de la lista.
+  const inscripcionesParaHash = excursion
+    ? inscripcionesDe(excursion.id).filter((i) => i.estado !== "cancelada" && i.asistenciaConfirmada)
+    : [];
+
   useEffect(() => {
     if (!excursion) return;
-    const canónico = contenidoCanonicoExcursion(excursion);
-    hashObjeto(canónico).then(setContentHash);
-  }, [excursion]);
+    contenidoCanonicoActa({
+      excursionId: excursion.id,
+      excursionFecha: excursion.fecha,
+      coordinadorId: excursion.coordinadorId,
+      idsAsistentes: inscripcionesParaHash.map((i) => i.id),
+      actaTimestamp: new Date().toISOString(),
+    })
+      .then(hashObjeto)
+      .then(setContentHash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excursion?.id, inscripcionesParaHash.length]);
 
   if (!excursion) {
     return (
@@ -204,8 +218,6 @@ export default function PanelParticipantesPage() {
 
       {/* ── Épica C: Registro en Blockchain ─────────────────────────────── */}
       <SeccionBlockchain
-        excursionId={excursion.id}
-        excursionDestino={excursion.destino}
         contentHash={contentHash}
         anclajeExistente={excursion.anclajeBlockchain}
         anclando={anclando}

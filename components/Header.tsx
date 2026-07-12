@@ -1,12 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
 
 const NAV_LINKS = [
   { href: "/excursiones", label: "Excursiones" },
-  { href: "/perfil-salud", label: "Perfil de salud" },
+  { href: "/perfil-salud", label: "Mi información" },
   { href: "/coordinador/nueva-excursion", label: "Coordinador" },
 ];
 
@@ -23,10 +24,17 @@ export function Header() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap text-lg font-extrabold"
+          className="flex flex-shrink-0 items-center gap-2 whitespace-nowrap text-lg font-extrabold"
           style={{ color: "var(--color-primary)" }}
         >
-          <span aria-hidden>🦅</span>
+          <Image
+            src="/images/ui/logo-aguila.png"
+            alt="Águila Viajera"
+            width={44}
+            height={44}
+            className="flex-shrink-0"
+            priority
+          />
           <span className="hidden xs:inline">Águila Viajera</span>
         </Link>
 

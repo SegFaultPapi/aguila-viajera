@@ -20,13 +20,13 @@ import {
   createWalletClient,
   custom,
   parseEventLogs,
-  decodeEventLog,
 } from "viem";
 import { DOCUMENT_REGISTRY_ABI } from "./abi";
 import {
   getPublicClient,
   getContractAddress,
   RED_ACTIVA,
+  CADENAS,
   type RedBlockchain,
 } from "./config";
 import { hexToBytes32 } from "../crypto";
@@ -81,16 +81,18 @@ export async function anclarRegistro(
     );
   }
 
+  // Convertir hash hex a bytes32 para el contrato
+  const contenidoHashBytes32 = hexToBytes32(params.contentHashHex);
+
   // Crear wallet client desde el provider del navegador
+  // chain: null → viem no valida la cadena al firmar (el contrato verifica en el node)
   const walletClient = createWalletClient({
+    chain: CADENAS[red],
     transport: custom(window.ethereum),
   });
 
   // Solicitar acceso a la cuenta (MetaMask abrirá popup si es necesario)
   const [address] = await walletClient.requestAddresses();
-
-  // Convertir hash hex a bytes32 para el contrato
-  const contenidoHashBytes32 = hexToBytes32(params.contentHashHex);
 
   // Enviar la transacción al contrato
   const txHash = await walletClient.writeContract({
@@ -99,6 +101,7 @@ export async function anclarRegistro(
     functionName: "anclar",
     args: [contenidoHashBytes32, params.tipo, params.referenciaId],
     account: address,
+    chain: CADENAS[red],
   });
 
   // Esperar confirmación de la tx y extraer registroId del evento
@@ -124,14 +127,16 @@ export async function anclarRegistro(
   }
 
   const { etherscanTxUrl } = await import("./config");
-  const url = etherscanTxUrl(txHash, red);
+  // localhost no tiene Etherscan — usar Sepolia como fallback para el URL
+  const redEtherscan = red === "mainnet" ? "mainnet" : "sepolia";
+  const url = etherscanTxUrl(txHash, redEtherscan);
 
   const anclaje: AnclajeBlockchain = {
     txHash,
     registroId,
     blockNumber: Number(receipt.blockNumber),
     ancladoEn: new Date(blockTimestamp * 1000).toISOString(),
-    red,
+    red: redEtherscan,
   };
 
   return { anclaje, etherscanUrl: url };

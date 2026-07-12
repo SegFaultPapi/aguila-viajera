@@ -4,7 +4,6 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 import { EXCURSIONES, INSCRIPCIONES, PERFILES_SALUD, USUARIOS } from "./seed-data";
 import { AnclajeBlockchain, Excursion, Inscripcion, PerfilSalud, Usuario } from "./types";
 import {
-  contenidoCanonicoCheckin,
   contenidoCanonicoExcursion,
   hashObjeto,
 } from "./crypto";
@@ -201,17 +200,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const marcarAsistencia = useCallback(async (inscripcionId: string, asistio: boolean) => {
-    // Épica C: al confirmar asistencia, generar el hash del check-in
+    // Épica C: al confirmar asistencia, generar un hash de solo el estado del check-in.
+    // Privacidad: no incluimos usuarioId ni inscritoPorId en el pre-imagen del hash —
+    // el hash del acta completa (con lista de asistentes anonimizada) se calcula en la
+    // UI del panel de participantes usando contenidoCanonicoActa().
     let checkinHash: string | undefined;
     if (asistio) {
-      const inscActual = inscripciones.find((i) => i.id === inscripcionId);
-      if (inscActual) {
-        const canónico = contenidoCanonicoCheckin({
-          ...inscActual,
-          asistenciaConfirmada: true,
-        });
-        checkinHash = await hashObjeto(canónico);
-      }
+      checkinHash = await hashObjeto({
+        inscripcionId,
+        asistenciaConfirmada: true,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     setInscripciones((prev) =>

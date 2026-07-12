@@ -9,23 +9,11 @@ import { Excursion } from "@/lib/types";
 
 /* ── Helpers ────────────────────────────────────────────── */
 
-function formatFecha(fecha: string) {
-  const d = new Date(fecha + "T12:00:00");
-  return d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
-}
-
 function fechaChip(fecha: string) {
   const d = new Date(fecha + "T12:00:00");
   const dia = d.toLocaleDateString("es-MX", { day: "numeric" });
   const mes = d.toLocaleDateString("es-MX", { month: "short" }).replace(".", "").toUpperCase();
   return { dia, mes };
-}
-
-function diasRestantes(fecha: string): number {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const destino = new Date(fecha + "T12:00:00");
-  return Math.ceil((destino.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 /* ── Tarjeta de excursión ───────────────────────────────── */
@@ -43,7 +31,6 @@ function ExcursionCard({
 }) {
   const router = useRouter();
   const { dia, mes } = fechaChip(excursion.fecha);
-  const dias = diasRestantes(excursion.fecha);
   const pct = Math.min((inscritosConfirmados / excursion.cupoMaximo) * 100, 100);
   const cupoLleno = inscritosConfirmados >= excursion.cupoMaximo;
   const pocosLugares = !cupoLleno && pct >= 75;
@@ -76,48 +63,22 @@ function ExcursionCard({
 
       {/* Contenido */}
       <div className="flex flex-1 flex-col gap-2 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-2xl flex-shrink-0" aria-hidden>{excursion.imagenEmoji}</span>
-            <h2 className="text-xl font-extrabold leading-tight truncate">{excursion.destino}</h2>
-          </div>
-          {dias <= 7 && dias > 0 && (
-            <span
-              className="flex-shrink-0 rounded-full px-2 py-0.5 text-sm font-bold"
-              style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
-            >
-              En {dias}d
-            </span>
-          )}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-2xl flex-shrink-0" aria-hidden>{excursion.imagenEmoji}</span>
+          <h2 className="text-xl font-extrabold leading-tight truncate">{excursion.destino}</h2>
         </div>
 
         <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
           📍 {excursion.colonia} · {excursion.horaSalida}h
         </p>
 
-        {/* Barra de cupo */}
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium" style={{ color: "var(--color-ink-soft)" }}>
-              {cupoLleno ? "Cupo lleno" : pocosLugares ? `${excursion.cupoMaximo - inscritosConfirmados} lugares disponibles` : `${inscritosConfirmados}/${excursion.cupoMaximo} inscritos`}
-            </span>
-            {excursion.costo === 0 && (
-              <span className="badge badge-success">Gratuito</span>
-            )}
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-border)" }}>
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${pct}%`,
-                background: cupoLleno
-                  ? "var(--color-alert)"
-                  : pocosLugares
-                  ? "var(--color-accent)"
-                  : "var(--color-primary)",
-              }}
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium" style={{ color: "var(--color-ink-soft)" }}>
+            {cupoLleno ? "Cupo lleno" : pocosLugares ? `${excursion.cupoMaximo - inscritosConfirmados} lugares disponibles` : `${inscritosConfirmados}/${excursion.cupoMaximo} inscritos`}
+          </span>
+          {excursion.costo === 0 && (
+            <span className="badge badge-success">Gratuito</span>
+          )}
         </div>
 
         {/* Badges */}
@@ -166,8 +127,6 @@ export default function ListadoExcursiones() {
     .filter((e) => colonia === "todas" || e.colonia === colonia)
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-  const proxima = visibles[0];
-
   return (
     <div className="flex flex-col gap-5">
       {/* Cabecera */}
@@ -177,32 +136,6 @@ export default function ListadoExcursiones() {
           Organizadas por comisiones COPACO en Iztapalapa.
         </p>
       </div>
-
-      {/* Próxima destacada */}
-      {proxima && colonia === "todas" && (
-        <div
-          className="rounded-2xl p-4 flex items-center gap-3"
-          style={{ background: "var(--color-primary-soft)", border: "1px solid var(--color-primary)" }}
-        >
-          <span className="text-3xl flex-shrink-0" aria-hidden>{proxima.imagenEmoji}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
-              Próxima excursión
-            </p>
-            <p className="text-lg font-extrabold truncate">{proxima.destino}</p>
-            <p className="text-base" style={{ color: "var(--color-primary)" }}>
-              {formatFecha(proxima.fecha)}
-            </p>
-          </div>
-          <Link
-            href={`/excursiones/${proxima.id}`}
-            className="btn-primary text-sm flex-shrink-0"
-            style={{ minHeight: "40px", padding: "0.5rem 1rem" }}
-          >
-            Ver →
-          </Link>
-        </div>
-      )}
 
       {/* Filtro */}
       <div className="flex items-center gap-2">

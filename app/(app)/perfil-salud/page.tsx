@@ -108,7 +108,7 @@ export default function PerfilSaludPage() {
       <div className="flex items-center gap-4">
         <PlaceholderImage label="Foto" shape="circle" size={64} />
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold">Perfil de salud</h1>
+          <h1 className="text-2xl font-extrabold">Mi información</h1>
           <p className="mt-0.5 font-semibold truncate" style={{ color: "var(--color-primary)" }}>
             {usuarioObjetivo.nombre}
           </p>
@@ -216,12 +216,12 @@ export default function PerfilSaludPage() {
             onChange={(e) => setAcompananteRequerido(e.target.checked)}
             className="h-5 w-5 flex-shrink-0"
           />
-          <span className="font-semibold">Requiere acompañante en excursiones</span>
+          <span className="font-semibold">Necesito ir acompañado(a)</span>
         </label>
       </SeccionCard>
 
       {/* Medicamentos */}
-      <SeccionCard titulo="Medicamentos críticos" icono="💊">
+      <SeccionCard titulo="Medicamentos" icono="💊">
         {medicamentos.length === 0 && (
           <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
             Ningún medicamento registrado.
@@ -326,7 +326,7 @@ export default function PerfilSaludPage() {
           disabled={cargando}
           style={{ minHeight: "56px" }}
         >
-          {cargando ? "Guardando…" : "Guardar perfil de salud"}
+          {cargando ? "Guardando…" : "Guardar mi información"}
         </button>
       </div>
     </form>

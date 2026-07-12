@@ -103,9 +103,8 @@ export default function NuevaExcursionPage() {
       <div className="success-box flex flex-col gap-4">
         <h1 className="text-2xl font-extrabold">Excursión publicada</h1>
         <p className="font-normal">
-          &quot;{destino}&quot; quedó registrada con tu autoría (coordinador: {currentUser.nombre}) y
-          fecha/hora del servidor — este registro no puede ser editado ni borrado por nadie fuera
-          de COPACO.
+          &quot;{destino}&quot; ya está guardada a tu nombre. Nadie fuera de COPACO puede
+          cambiarla o borrarla.
         </p>
         <div className="flex flex-wrap gap-3">
           <button className="btn-primary" onClick={() => router.push(`/excursiones/${excursionCreadaId}`)}>
@@ -348,8 +347,8 @@ export default function NuevaExcursionPage() {
             {requiereAcompanante && " · requiere acompañante"}
           </p>
           <div className="info-box text-sm">
-            Al publicar, esta excursión queda con timestamp y tu autoría (
-            {currentUser.nombre}) de forma inmutable.
+            Al publicar, quedará guardada a tu nombre ({currentUser.nombre}) con la fecha de hoy.
+            No se podrá borrar.
           </div>
         </div>
       )}

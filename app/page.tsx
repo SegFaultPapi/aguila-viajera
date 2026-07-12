@@ -74,13 +74,22 @@ function TopBar() {
       style={{ borderColor: "var(--color-border)", background: "var(--color-bg)" }}
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
-        <div className="flex items-baseline gap-2">
-          <span className="font-display text-xl font-extrabold tracking-tight" style={{ color: "var(--color-primary)" }}>
-            Águila Viajera
-          </span>
-          <span className="hidden text-sm font-medium sm:inline" style={{ color: "var(--color-ink-soft)" }}>
-            COPACO · Iztapalapa, CDMX
-          </span>
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/images/ui/logo-aguila.png"
+            alt="Águila Viajera"
+            width={44}
+            height={44}
+            style={{ flexShrink: 0 }}
+          />
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-xl font-extrabold tracking-tight" style={{ color: "var(--color-primary)" }}>
+              Águila Viajera
+            </span>
+            <span className="hidden text-sm font-medium sm:inline" style={{ color: "var(--color-ink-soft)" }}>
+              COPACO · Iztapalapa, CDMX
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="btn-secondary text-sm px-4 py-2" style={{ minHeight: "40px" }}>
@@ -165,10 +174,30 @@ function Hero() {
 /* ── Rotating image + description ───────────────────────── */
 
 const MOMENTOS = [
-  { titulo: "Salida puntual", detalle: "Cada excursión inicia con la lista de asistencia confirmada.", imagen: "/images/ui/momento-1.jpg" },
-  { titulo: "Rutas revisadas", detalle: "Verificamos la accesibilidad del camino antes de salir.", imagen: "/images/ui/momento-2.jpg" },
-  { titulo: "Acompañamiento", detalle: "Coordinadores atentos a las necesidades de cada persona.", imagen: "/images/ui/momento-3.jpg" },
-  { titulo: "Regreso seguro", detalle: "Cerramos cada excursión con el grupo completo.", imagen: "/images/ui/momento-4.jpg" },
+  {
+    titulo: "Salida puntual",
+    detalle: "Cada excursión inicia con la lista de asistencia confirmada.",
+    bullets: ["Lista de asistencia digital", "Hora y punto de salida claros", "Aviso previo por WhatsApp"],
+    imagen: "/images/ui/momento-1.jpg",
+  },
+  {
+    titulo: "Rutas revisadas",
+    detalle: "Verificamos la accesibilidad del camino antes de salir.",
+    bullets: ["Sin escaleras no anunciadas", "Rampas y paradas de descanso", "Terreno apto para bastón o andadera"],
+    imagen: "/images/ui/momento-2.jpg",
+  },
+  {
+    titulo: "Acompañamiento",
+    detalle: "Coordinadores atentos a las necesidades de cada persona.",
+    bullets: ["Coordinador conoce tu perfil de salud", "Medicamentos y contacto de emergencia a la mano", "Ritmo adaptado al grupo"],
+    imagen: "/images/ui/momento-3.jpg",
+  },
+  {
+    titulo: "Regreso seguro",
+    detalle: "Cerramos cada excursión con el grupo completo.",
+    bullets: ["Check-in de regreso por participante", "Registro de incidencias si las hay", "Familia notificada al cierre"],
+    imagen: "/images/ui/momento-4.jpg",
+  },
 ];
 
 function MomentosCarousel() {
@@ -207,11 +236,23 @@ function MomentosCarousel() {
               style={{ zIndex: 10, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.45))" }}
             />
           </div>
-          <div key={`text-${activo}`} className="flex-1 animate-fade-in">
+          <div key={`text-${activo}`} className="flex-1 animate-fade-in flex flex-col gap-4">
             <h3 className="text-3xl font-extrabold" style={{ color: "white" }}>{momento.titulo}</h3>
-            <p className="mt-3 text-xl" style={{ color: "rgba(255,255,255,0.72)" }}>
+            <p className="text-xl" style={{ color: "rgba(255,255,255,0.82)" }}>
               {momento.detalle}
             </p>
+            <ul className="flex flex-col gap-2 mt-1">
+              {momento.bullets.map((b) => (
+                <li key={b} className="flex items-center gap-2.5 text-base" style={{ color: "rgba(255,255,255,0.9)" }}>
+                  <span
+                    className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                    style={{ background: "var(--color-accent)" }}
+                    aria-hidden
+                  />
+                  {b}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
