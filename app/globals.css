@@ -200,6 +200,7 @@ h1, h2, h3 {
   padding: 0.35rem 0.85rem;
   font-size: 0.9rem;
   font-weight: 600;
+  white-space: nowrap;
   background: var(--color-bg-alt);
   color: var(--color-ink-soft);
 }

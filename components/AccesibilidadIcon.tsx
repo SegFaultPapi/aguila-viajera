@@ -6,9 +6,9 @@ export function nivelAccesibilidad(ex: Excursion): {
 } {
   const { tieneEscaleras, tienePuentesSinRampa, terrenoIrregular } = ex.accesibilidad;
   const problemas = [tieneEscaleras, tienePuentesSinRampa, terrenoIrregular].filter(Boolean).length;
-  if (problemas === 0) return { emoji: "✅", label: "Ruta accesible" };
-  if (problemas === 1) return { emoji: "🦯", label: "Ruta con algún obstáculo" };
-  return { emoji: "♿⚠️", label: "Ruta con varios obstáculos" };
+  if (problemas === 0) return { emoji: "✅", label: "Accesible" };
+  if (problemas === 1) return { emoji: "🦯", label: "Con obstáculos" };
+  return { emoji: "♿", label: "Varios obstáculos" };
 }
 
 export function AccesibilidadBadge({
@@ -27,7 +27,7 @@ export function AccesibilidadBadge({
     problemas > 1 ? { background: "var(--color-alert-bg)", color: "var(--color-alert)" } : undefined;
 
   return (
-    <span className={`badge ${claseExtra}`} style={estiloAlerta}>
+    <span className={`badge flex-shrink-0 ${claseExtra}`} style={estiloAlerta}>
       {icon && <span aria-hidden>{emoji}</span>} {label}
     </span>
   );

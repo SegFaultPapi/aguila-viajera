@@ -46,8 +46,14 @@ export const publicClientMainnet = createPublicClient({
   ),
 });
 
+export const publicClientLocalhost = createPublicClient({
+  chain: { ...sepolia, id: 31337, name: "Localhost" } as Chain,
+  transport: http("http://127.0.0.1:8545"),
+});
+
 export function getPublicClient(red: RedBlockchain) {
   if (red === "mainnet") return publicClientMainnet;
+  if (red === "localhost") return publicClientLocalhost;
   return publicClientSepolia;
 }
 

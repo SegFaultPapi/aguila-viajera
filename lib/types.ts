@@ -3,14 +3,16 @@ export type Rol = "adulto_mayor" | "familiar" | "coordinador";
 // ── Épica C: Integridad de registros ─────────────────────────────────────────
 
 /**
- * Estado de anclaje en blockchain. El prototipo lo simula en memoria;
- * en producción (Fase 1) este campo se persiste en la tabla append-only.
+ * Estado de publicación en blockchain de un acta. Publicada por el backend
+ * (wallet institucional) cuando el coordinador presiona el botón — el
+ * coordinador nunca firma. El prototipo lo simula en memoria; en producción
+ * (Fase 1) este campo se persiste en la tabla append-only.
  */
 export interface AnclajeBlockchain {
-  /** Hash de la transacción Ethereum que ancló el registro */
+  /** Hash de la transacción Ethereum que publicó el acta */
   txHash: string;
-  /** ID del registro devuelto por DocumentRegistry.anclar() */
-  registroId: string;
+  /** ID del acta devuelto por DocumentRegistry.publicarActa() */
+  actaId: string;
   /** Número de bloque donde quedó incluida la tx */
   blockNumber: number;
   /** Timestamp ISO del bloque */

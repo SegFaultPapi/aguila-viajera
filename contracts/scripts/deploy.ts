@@ -16,20 +16,30 @@ import { join } from "path";
 async function main() {
   const [deployer] = await ethers.getSigners();
 
+  // La wallet publicadora es la única autorizada a llamar publicarActa().
+  // Vive en el backend (COPACO_PUBLICADOR_PRIVATE_KEY en .env del proyecto Next.js),
+  // nunca en el dispositivo del coordinador. Por defecto, en este deploy usamos
+  // el mismo deployer como publicador; en producción se recomienda usar una
+  // dirección distinta derivada de esa clave de servidor.
+  const publicadorAddress = process.env.COPACO_PUBLICADOR_ADDRESS || ethers.ZeroAddress;
+
   console.log("─────────────────────────────────────────────");
   console.log("  Águila Viajera — Deploy DocumentRegistry");
   console.log("─────────────────────────────────────────────");
-  console.log(`  Red:       ${network.name}`);
-  console.log(`  Deployer:  ${deployer.address}`);
+  console.log(`  Red:         ${network.name}`);
+  console.log(`  Deployer:    ${deployer.address}`);
   console.log(
-    `  Balance:   ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))} ETH`
+    `  Publicador:  ${publicadorAddress === ethers.ZeroAddress ? `${deployer.address} (= deployer)` : publicadorAddress}`
+  );
+  console.log(
+    `  Balance:     ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))} ETH`
   );
   console.log("─────────────────────────────────────────────");
 
   const DocumentRegistry = await ethers.getContractFactory("DocumentRegistry");
   console.log("\nDesplegando DocumentRegistry...");
 
-  const registry = await DocumentRegistry.deploy();
+  const registry = await DocumentRegistry.deploy(publicadorAddress);
   await registry.waitForDeployment();
 
   const address = await registry.getAddress();

@@ -2,5 +2,14 @@ node_modules/
 artifacts/
 cache/
 dist/
+
+# archivos de entorno — nunca comitear claves privadas
 .env
+.env.local
+.env.*.local
+
+# artefactos de despliegue — contienen direcciones de contrato específicas de red
 deployments/*.json
+
+# typechain — generados automáticamente con `npm run compile`
+typechain-types/

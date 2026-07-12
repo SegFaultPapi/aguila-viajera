@@ -24,117 +24,156 @@ import type {
 } from "./common";
 
 export declare namespace DocumentRegistry {
-  export type RegistroStruct = {
-    contenidoHash: BytesLike;
-    autor: AddressLike;
-    timestamp: BigNumberish;
-    tipo: string;
-    referenciaId: string;
+  export type ActaStruct = {
+    excursionId: string;
+    destino: string;
+    colonia: string;
+    fecha: BigNumberish;
+    totalAsistentes: BigNumberish;
+    cupoMaximo: BigNumberish;
+    coordinadorId: string;
+    hashVerificacion: BytesLike;
+    publicadoEn: BigNumberish;
   };
 
-  export type RegistroStructOutput = [
-    contenidoHash: string,
-    autor: string,
-    timestamp: bigint,
-    tipo: string,
-    referenciaId: string
+  export type ActaStructOutput = [
+    excursionId: string,
+    destino: string,
+    colonia: string,
+    fecha: bigint,
+    totalAsistentes: bigint,
+    cupoMaximo: bigint,
+    coordinadorId: string,
+    hashVerificacion: string,
+    publicadoEn: bigint
   ] & {
-    contenidoHash: string;
-    autor: string;
-    timestamp: bigint;
-    tipo: string;
-    referenciaId: string;
+    excursionId: string;
+    destino: string;
+    colonia: string;
+    fecha: bigint;
+    totalAsistentes: bigint;
+    cupoMaximo: bigint;
+    coordinadorId: string;
+    hashVerificacion: string;
+    publicadoEn: bigint;
   };
 }
 
 export interface DocumentRegistryInterface extends Interface {
   getFunction(
     nameOrSignature:
-      | "anclar"
-      | "listaRegistros"
-      | "obtenerRegistro"
-      | "obtenerRegistros"
-      | "registros"
-      | "totalRegistros"
-      | "verificar"
+      | "actas"
+      | "cambiarPublicador"
+      | "listaActas"
+      | "obtenerActa"
+      | "obtenerActas"
+      | "owner"
+      | "publicador"
+      | "publicarActa"
+      | "totalActas"
   ): FunctionFragment;
 
-  getEvent(nameOrSignatureOrTopic: "RegistroAnclado"): EventFragment;
+  getEvent(
+    nameOrSignatureOrTopic: "ActaPublicada" | "PublicadorActualizado"
+  ): EventFragment;
 
+  encodeFunctionData(functionFragment: "actas", values: [BytesLike]): string;
   encodeFunctionData(
-    functionFragment: "anclar",
-    values: [BytesLike, string, string]
+    functionFragment: "cambiarPublicador",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "listaRegistros",
+    functionFragment: "listaActas",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "obtenerRegistro",
+    functionFragment: "obtenerActa",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "obtenerRegistros",
+    functionFragment: "obtenerActas",
     values: [BigNumberish, BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "registros",
-    values: [BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "totalRegistros",
+    functionFragment: "publicador",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "verificar",
-    values: [BytesLike, BytesLike]
+    functionFragment: "publicarActa",
+    values: [
+      string,
+      string,
+      string,
+      BigNumberish,
+      BigNumberish,
+      BigNumberish,
+      string,
+      BytesLike
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "totalActas",
+    values?: undefined
   ): string;
 
-  decodeFunctionResult(functionFragment: "anclar", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "actas", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "listaRegistros",
+    functionFragment: "cambiarPublicador",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "listaActas", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "obtenerActa",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "obtenerRegistro",
+    functionFragment: "obtenerActas",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "publicador", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "obtenerRegistros",
+    functionFragment: "publicarActa",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "registros", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "totalRegistros",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "verificar", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "totalActas", data: BytesLike): Result;
 }
 
-export namespace RegistroAncladoEvent {
+export namespace ActaPublicadaEvent {
   export type InputTuple = [
-    registroId: BytesLike,
-    contenidoHash: BytesLike,
-    autor: AddressLike,
-    timestamp: BigNumberish,
-    tipo: string,
-    referenciaId: string
+    actaId: BytesLike,
+    excursionId: string,
+    destino: string,
+    totalAsistentes: BigNumberish,
+    publicadoEn: BigNumberish
   ];
   export type OutputTuple = [
-    registroId: string,
-    contenidoHash: string,
-    autor: string,
-    timestamp: bigint,
-    tipo: string,
-    referenciaId: string
+    actaId: string,
+    excursionId: string,
+    destino: string,
+    totalAsistentes: bigint,
+    publicadoEn: bigint
   ];
   export interface OutputObject {
-    registroId: string;
-    contenidoHash: string;
-    autor: string;
-    timestamp: bigint;
-    tipo: string;
-    referenciaId: string;
+    actaId: string;
+    excursionId: string;
+    destino: string;
+    totalAsistentes: bigint;
+    publicadoEn: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace PublicadorActualizadoEvent {
+  export type InputTuple = [anterior: AddressLike, nuevo: AddressLike];
+  export type OutputTuple = [anterior: string, nuevo: string];
+  export interface OutputObject {
+    anterior: string;
+    nuevo: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -185,132 +224,190 @@ export interface DocumentRegistry extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  anclar: TypedContractMethod<
-    [contenidoHash: BytesLike, tipo: string, referenciaId: string],
-    [string],
-    "nonpayable"
-  >;
-
-  listaRegistros: TypedContractMethod<[arg0: BigNumberish], [string], "view">;
-
-  obtenerRegistro: TypedContractMethod<
-    [registroId: BytesLike],
-    [DocumentRegistry.RegistroStructOutput],
+  actas: TypedContractMethod<
+    [arg0: BytesLike],
+    [
+      [
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        string,
+        string,
+        bigint
+      ] & {
+        excursionId: string;
+        destino: string;
+        colonia: string;
+        fecha: bigint;
+        totalAsistentes: bigint;
+        cupoMaximo: bigint;
+        coordinadorId: string;
+        hashVerificacion: string;
+        publicadoEn: bigint;
+      }
+    ],
     "view"
   >;
 
-  obtenerRegistros: TypedContractMethod<
+  cambiarPublicador: TypedContractMethod<
+    [nuevo: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  listaActas: TypedContractMethod<[arg0: BigNumberish], [string], "view">;
+
+  obtenerActa: TypedContractMethod<
+    [actaId: BytesLike],
+    [DocumentRegistry.ActaStructOutput],
+    "view"
+  >;
+
+  obtenerActas: TypedContractMethod<
     [offset: BigNumberish, limite: BigNumberish],
     [string[]],
     "view"
   >;
 
-  registros: TypedContractMethod<
-    [arg0: BytesLike],
+  owner: TypedContractMethod<[], [string], "view">;
+
+  publicador: TypedContractMethod<[], [string], "view">;
+
+  publicarActa: TypedContractMethod<
     [
-      [string, string, bigint, string, string] & {
-        contenidoHash: string;
-        autor: string;
-        timestamp: bigint;
-        tipo: string;
-        referenciaId: string;
-      }
+      excursionId: string,
+      destino: string,
+      colonia: string,
+      fecha: BigNumberish,
+      totalAsistentes: BigNumberish,
+      cupoMaximo: BigNumberish,
+      coordinadorId: string,
+      hashVerificacion: BytesLike
     ],
-    "view"
+    [string],
+    "nonpayable"
   >;
 
-  totalRegistros: TypedContractMethod<[], [bigint], "view">;
-
-  verificar: TypedContractMethod<
-    [registroId: BytesLike, contenidoHash: BytesLike],
-    [
-      [boolean, string, bigint] & {
-        integro: boolean;
-        autor: string;
-        timestamp: bigint;
-      }
-    ],
-    "view"
-  >;
+  totalActas: TypedContractMethod<[], [bigint], "view">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
   getFunction(
-    nameOrSignature: "anclar"
+    nameOrSignature: "actas"
   ): TypedContractMethod<
-    [contenidoHash: BytesLike, tipo: string, referenciaId: string],
-    [string],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "listaRegistros"
-  ): TypedContractMethod<[arg0: BigNumberish], [string], "view">;
-  getFunction(
-    nameOrSignature: "obtenerRegistro"
-  ): TypedContractMethod<
-    [registroId: BytesLike],
-    [DocumentRegistry.RegistroStructOutput],
+    [arg0: BytesLike],
+    [
+      [
+        string,
+        string,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        string,
+        string,
+        bigint
+      ] & {
+        excursionId: string;
+        destino: string;
+        colonia: string;
+        fecha: bigint;
+        totalAsistentes: bigint;
+        cupoMaximo: bigint;
+        coordinadorId: string;
+        hashVerificacion: string;
+        publicadoEn: bigint;
+      }
+    ],
     "view"
   >;
   getFunction(
-    nameOrSignature: "obtenerRegistros"
+    nameOrSignature: "cambiarPublicador"
+  ): TypedContractMethod<[nuevo: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "listaActas"
+  ): TypedContractMethod<[arg0: BigNumberish], [string], "view">;
+  getFunction(
+    nameOrSignature: "obtenerActa"
+  ): TypedContractMethod<
+    [actaId: BytesLike],
+    [DocumentRegistry.ActaStructOutput],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "obtenerActas"
   ): TypedContractMethod<
     [offset: BigNumberish, limite: BigNumberish],
     [string[]],
     "view"
   >;
   getFunction(
-    nameOrSignature: "registros"
+    nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "publicador"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "publicarActa"
   ): TypedContractMethod<
-    [arg0: BytesLike],
     [
-      [string, string, bigint, string, string] & {
-        contenidoHash: string;
-        autor: string;
-        timestamp: bigint;
-        tipo: string;
-        referenciaId: string;
-      }
+      excursionId: string,
+      destino: string,
+      colonia: string,
+      fecha: BigNumberish,
+      totalAsistentes: BigNumberish,
+      cupoMaximo: BigNumberish,
+      coordinadorId: string,
+      hashVerificacion: BytesLike
     ],
-    "view"
+    [string],
+    "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "totalRegistros"
+    nameOrSignature: "totalActas"
   ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "verificar"
-  ): TypedContractMethod<
-    [registroId: BytesLike, contenidoHash: BytesLike],
-    [
-      [boolean, string, bigint] & {
-        integro: boolean;
-        autor: string;
-        timestamp: bigint;
-      }
-    ],
-    "view"
-  >;
 
   getEvent(
-    key: "RegistroAnclado"
+    key: "ActaPublicada"
   ): TypedContractEvent<
-    RegistroAncladoEvent.InputTuple,
-    RegistroAncladoEvent.OutputTuple,
-    RegistroAncladoEvent.OutputObject
+    ActaPublicadaEvent.InputTuple,
+    ActaPublicadaEvent.OutputTuple,
+    ActaPublicadaEvent.OutputObject
+  >;
+  getEvent(
+    key: "PublicadorActualizado"
+  ): TypedContractEvent<
+    PublicadorActualizadoEvent.InputTuple,
+    PublicadorActualizadoEvent.OutputTuple,
+    PublicadorActualizadoEvent.OutputObject
   >;
 
   filters: {
-    "RegistroAnclado(bytes32,bytes32,address,uint64,string,string)": TypedContractEvent<
-      RegistroAncladoEvent.InputTuple,
-      RegistroAncladoEvent.OutputTuple,
-      RegistroAncladoEvent.OutputObject
+    "ActaPublicada(bytes32,string,string,uint32,uint64)": TypedContractEvent<
+      ActaPublicadaEvent.InputTuple,
+      ActaPublicadaEvent.OutputTuple,
+      ActaPublicadaEvent.OutputObject
     >;
-    RegistroAnclado: TypedContractEvent<
-      RegistroAncladoEvent.InputTuple,
-      RegistroAncladoEvent.OutputTuple,
-      RegistroAncladoEvent.OutputObject
+    ActaPublicada: TypedContractEvent<
+      ActaPublicadaEvent.InputTuple,
+      ActaPublicadaEvent.OutputTuple,
+      ActaPublicadaEvent.OutputObject
+    >;
+
+    "PublicadorActualizado(address,address)": TypedContractEvent<
+      PublicadorActualizadoEvent.InputTuple,
+      PublicadorActualizadoEvent.OutputTuple,
+      PublicadorActualizadoEvent.OutputObject
+    >;
+    PublicadorActualizado: TypedContractEvent<
+      PublicadorActualizadoEvent.InputTuple,
+      PublicadorActualizadoEvent.OutputTuple,
+      PublicadorActualizadoEvent.OutputObject
     >;
   };
 }

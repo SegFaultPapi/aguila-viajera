@@ -72,13 +72,14 @@ function fechaChip(fecha: string) {
 /* ── Thumbnail de excursión ─────────────────────────────── */
 
 const RADIUS_TOP = "1.25rem 1.25rem 0 0";
+const IMG_HEIGHT = "clamp(160px, 42vw, 200px)";
 
 function ExcursionThumbnail({ id, emoji }: { id: string; emoji: string }) {
   const [error, setError] = useState(false);
 
   if (error) {
     return (
-      <div style={{ borderRadius: RADIUS_TOP, overflow: "hidden" }}>
+      <div style={{ borderRadius: RADIUS_TOP, overflow: "hidden", height: IMG_HEIGHT }}>
         <PlaceholderImage label={emoji} aspect="aspect-[3/2]" />
       </div>
     );
@@ -92,7 +93,7 @@ function ExcursionThumbnail({ id, emoji }: { id: string; emoji: string }) {
       onError={() => setError(true)}
       style={{
         width: "100%",
-        aspectRatio: "3 / 2",
+        height: IMG_HEIGHT,
         objectFit: "cover",
         borderRadius: RADIUS_TOP,
         display: "block",
@@ -105,12 +106,10 @@ function ExcursionThumbnail({ id, emoji }: { id: string; emoji: string }) {
 
 function ExcursionCard({
   excursion,
-  coordinadorNombre,
   inscritosConfirmados,
   esCoordinador,
 }: {
   excursion: Excursion;
-  coordinadorNombre: string;
   inscritosConfirmados: number;
   esCoordinador: boolean;
 }) {
@@ -130,84 +129,84 @@ function ExcursionCard({
       className="card card-interactive cursor-pointer overflow-hidden"
       style={{ padding: 0, textDecoration: "none" }}
     >
-      {/* Thumbnail */}
-      <ExcursionThumbnail id={excursion.id} emoji={excursion.imagenEmoji} />
+      {/* Thumbnail con chip de fecha superpuesto */}
+      <div className="relative">
+        <ExcursionThumbnail id={excursion.id} emoji={excursion.imagenEmoji} />
 
-      {/* Contenido */}
-      <div className="flex gap-4 p-5">
-        {/* Chip de fecha */}
+        {/* Chip de fecha — esquina inferior izquierda sobre la imagen */}
         <div
-          className="flex flex-col items-center justify-center flex-shrink-0 rounded-2xl px-3 py-2 text-center self-start"
+          className="absolute bottom-3 left-3 flex flex-col items-center justify-center rounded-xl px-2.5 py-1.5 text-center"
           style={{
-            background: "var(--color-primary-soft)",
-            minWidth: "56px",
+            background: "white",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.18)",
+            minWidth: "44px",
           }}
         >
-          <span className="text-2xl font-extrabold leading-none" style={{ color: "var(--color-primary)" }}>
+          <span className="text-xl font-extrabold leading-none" style={{ color: "var(--color-primary)" }}>
             {dia}
           </span>
-          <span className="text-sm font-bold uppercase" style={{ color: "var(--color-primary)" }}>
+          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
             {mes}
           </span>
         </div>
+      </div>
 
-        {/* Info */}
-        <div className="flex flex-1 flex-col gap-2 min-w-0">
-          <h2 className="text-xl font-extrabold leading-tight">{excursion.destino}</h2>
+      {/* Contenido */}
+      <div className="flex flex-col gap-2 p-4">
+        <h2 className="text-xl font-extrabold leading-tight">{excursion.destino}</h2>
 
-          <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
-            📍 {excursion.colonia} · {excursion.horaSalida}h
-          </p>
+        <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
+          📍 {excursion.colonia} · {excursion.horaSalida}h
+        </p>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium" style={{ color: "var(--color-ink-soft)" }}>
-              {cupoLleno
-                ? "Cupo lleno"
-                : pocosLugares
-                ? `${excursion.cupoMaximo - inscritosConfirmados} lugares disponibles`
-                : `${inscritosConfirmados}/${excursion.cupoMaximo} inscritos`}
-            </span>
-            {excursion.costo === 0 && (
-              <span className="badge badge-success">Gratuito</span>
-            )}
-          </div>
-
-          {/* Badges */}
-          <div className="flex flex-wrap items-center gap-2">
-            <AccesibilidadBadge excursion={excursion} />
-            {excursion.requiereAcompanante && (
-              <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
-                👥 Requiere acompañante
-              </span>
-            )}
-            {excursion.estado === "reprogramada" && (
-              <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
-                Fecha cambiada
-              </span>
-            )}
-            {excursion.estado === "cancelada" && (
-              <span className="badge" style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}>
-                Cancelada
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
-              Coordina: {coordinadorNombre}
-            </p>
-            {esCoordinador && (
-              <Link
-                href={`/coordinador/excursiones/${excursion.id}/participantes`}
-                className="text-sm font-bold"
-                style={{ color: "var(--color-primary)" }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                Panel →
-              </Link>
-            )}
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium flex-shrink-0" style={{ color: "var(--color-ink-soft)" }}>
+            {cupoLleno
+              ? "Cupo lleno"
+              : pocosLugares
+              ? `${excursion.cupoMaximo - inscritosConfirmados} lugares`
+              : `${inscritosConfirmados}/${excursion.cupoMaximo} inscritos`}
+          </span>
+          {excursion.costo === 0 && (
+            <span className="badge badge-success flex-shrink-0">Gratuito</span>
+          )}
         </div>
+
+        {/* Badges */}
+        <div
+          className="flex items-center gap-2"
+          style={{ overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          <AccesibilidadBadge excursion={excursion} />
+          {excursion.requiereAcompanante && (
+            <span className="badge flex-shrink-0" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
+              👥 Acompañante
+            </span>
+          )}
+          {excursion.estado === "reprogramada" && (
+            <span className="badge flex-shrink-0" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
+              Fecha cambiada
+            </span>
+          )}
+          {excursion.estado === "cancelada" && (
+            <span className="badge flex-shrink-0" style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}>
+              Cancelada
+            </span>
+          )}
+        </div>
+
+        {esCoordinador && (
+          <div className="flex justify-end">
+            <Link
+              href={`/coordinador/excursiones/${excursion.id}/participantes`}
+              className="text-sm font-bold"
+              style={{ color: "var(--color-primary)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Panel →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -295,14 +294,12 @@ export default function ListadoExcursiones() {
       {/* Lista */}
       <div className="flex flex-col gap-4">
         {visibles.map((ex) => {
-          const coordinador = usuarios.find((u) => u.id === ex.coordinadorId);
           const inscritos = inscripcionesDe(ex.id).filter((i) => i.estado === "confirmada").length;
           const esCoord = currentUser.rol === "coordinador" && currentUser.id === ex.coordinadorId;
           return (
             <ExcursionCard
               key={ex.id}
               excursion={ex}
-              coordinadorNombre={coordinador?.nombre ?? "—"}
               inscritosConfirmados={inscritos}
               esCoordinador={esCoord}
             />
@@ -338,7 +335,6 @@ export default function ListadoExcursiones() {
               <div key={ex.id} style={{ opacity: 0.8 }}>
                 <ExcursionCard
                   excursion={ex}
-                  coordinadorNombre={usuarios.find((u) => u.id === ex.coordinadorId)?.nombre ?? "—"}
                   inscritosConfirmados={inscritos}
                   esCoordinador={esCoord}
                 />

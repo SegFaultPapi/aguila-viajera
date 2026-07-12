@@ -171,9 +171,9 @@ export function Chatbot() {
           aria-modal="true"
           className="fixed flex flex-col"
           style={{
-            bottom: "88px",
-            right: "1rem",
-            width: "min(360px, calc(100vw - 2rem))",
+            bottom: "136px",
+            right: "0.75rem",
+            width: "min(360px, calc(100vw - 1.5rem))",
             height: "min(500px, calc(100dvh - 180px))",
             zIndex: 60,
             background: "var(--color-card)",
@@ -324,16 +324,16 @@ export function Chatbot() {
           aria-label="Abrir asistente Águila Viajera"
           className="fixed"
           style={{
-            bottom: "88px",
-            right: "1rem",
-            zIndex: 50,
+            bottom: "76px",
+            right: "0.75rem",
+            zIndex: 45,
             background: "none",
             border: "none",
             padding: 0,
             cursor: "pointer",
-            width: "64px",
-            height: "64px",
-            filter: "drop-shadow(0 4px 16px rgba(2,132,199,0.45))",
+            width: "52px",
+            height: "52px",
+            filter: "drop-shadow(0 4px 12px rgba(2,132,199,0.40))",
             transition: "transform 0.15s ease, filter 0.15s ease",
           }}
           onMouseEnter={(e) => {
@@ -347,8 +347,8 @@ export function Chatbot() {
             src="/images/ui/aguila-bienvenida.png"
             alt=""
             aria-hidden
-            width={64}
-            height={64}
+            width={52}
+            height={52}
             style={{ objectFit: "contain", display: "block" }}
           />
           {/* Indicador de notificación */}
@@ -358,8 +358,8 @@ export function Chatbot() {
             style={{
               top: 0,
               right: 0,
-              width: "14px",
-              height: "14px",
+              width: "12px",
+              height: "12px",
               borderRadius: "50%",
               background: "var(--color-accent)",
               border: "2px solid white",

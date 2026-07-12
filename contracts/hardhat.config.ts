@@ -1,8 +1,13 @@
+import path from "node:path";
+import dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
-// Las claves privadas y API keys van en .env (nunca en este archivo)
-// Ver contracts/.env.example para la lista completa
+// Un solo .env para todo el proyecto: el mismo .env.local que usa Next.js
+// en la raíz del repo (nunca contracts/.env). Ver .env.local.example.
+dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
+
+// Las claves privadas y API keys van en .env.local (nunca en este archivo)
 const PRIVATE_KEY = process.env.COPACO_DEPLOYER_PRIVATE_KEY ?? "";
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY ?? "";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY ?? "";

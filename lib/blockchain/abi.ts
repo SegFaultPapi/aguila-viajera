@@ -10,84 +10,92 @@ export const DOCUMENT_REGISTRY_ABI = [
   // ── Eventos ──────────────────────────────────────────────────────────────
   {
     type: "event",
-    name: "RegistroAnclado",
+    name: "ActaPublicada",
     inputs: [
-      { name: "registroId",    type: "bytes32", indexed: true  },
-      { name: "contenidoHash", type: "bytes32", indexed: true  },
-      { name: "autor",         type: "address", indexed: true  },
-      { name: "timestamp",     type: "uint64",  indexed: false },
-      { name: "tipo",          type: "string",  indexed: false },
-      { name: "referenciaId",  type: "string",  indexed: false },
+      { name: "actaId",          type: "bytes32", indexed: true  },
+      { name: "excursionId",     type: "string",  indexed: false },
+      { name: "destino",         type: "string",  indexed: false },
+      { name: "totalAsistentes", type: "uint32",  indexed: false },
+      { name: "publicadoEn",     type: "uint64",  indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "PublicadorActualizado",
+    inputs: [
+      { name: "anterior", type: "address", indexed: true },
+      { name: "nuevo",    type: "address", indexed: true },
     ],
   },
 
   // ── Errores ───────────────────────────────────────────────────────────────
+  { type: "error", name: "NoAutorizado",    inputs: [] },
+  { type: "error", name: "ExcursionIdVacio", inputs: [] },
   {
     type: "error",
-    name: "RegistroYaExiste",
-    inputs: [{ name: "registroId", type: "bytes32" }],
+    name: "ActaYaExiste",
+    inputs: [{ name: "actaId", type: "bytes32" }],
   },
-  { type: "error", name: "HashVacio",      inputs: [] },
-  { type: "error", name: "TipoVacio",      inputs: [] },
-  { type: "error", name: "ReferenciaVacia", inputs: [] },
 
   // ── Escritura ─────────────────────────────────────────────────────────────
   {
     type: "function",
-    name: "anclar",
+    name: "publicarActa",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "contenidoHash", type: "bytes32" },
-      { name: "tipo",          type: "string"  },
-      { name: "referenciaId",  type: "string"  },
+      { name: "excursionId",      type: "string"  },
+      { name: "destino",          type: "string"  },
+      { name: "colonia",          type: "string"  },
+      { name: "fecha",            type: "uint64"  },
+      { name: "totalAsistentes",  type: "uint32"  },
+      { name: "cupoMaximo",       type: "uint32"  },
+      { name: "coordinadorId",    type: "string"  },
+      { name: "hashVerificacion", type: "bytes32" },
     ],
-    outputs: [{ name: "registroId", type: "bytes32" }],
+    outputs: [{ name: "actaId", type: "bytes32" }],
+  },
+  {
+    type: "function",
+    name: "cambiarPublicador",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "nuevo", type: "address" }],
+    outputs: [],
   },
 
   // ── Lectura ───────────────────────────────────────────────────────────────
   {
     type: "function",
-    name: "verificar",
+    name: "obtenerActa",
     stateMutability: "view",
-    inputs: [
-      { name: "registroId",    type: "bytes32" },
-      { name: "contenidoHash", type: "bytes32" },
-    ],
-    outputs: [
-      { name: "integro",   type: "bool"    },
-      { name: "autor",     type: "address" },
-      { name: "timestamp", type: "uint64"  },
-    ],
-  },
-  {
-    type: "function",
-    name: "obtenerRegistro",
-    stateMutability: "view",
-    inputs: [{ name: "registroId", type: "bytes32" }],
+    inputs: [{ name: "actaId", type: "bytes32" }],
     outputs: [
       {
         name: "",
         type: "tuple",
         components: [
-          { name: "contenidoHash", type: "bytes32" },
-          { name: "autor",         type: "address" },
-          { name: "timestamp",     type: "uint64"  },
-          { name: "tipo",          type: "string"  },
-          { name: "referenciaId",  type: "string"  },
+          { name: "excursionId",      type: "string"  },
+          { name: "destino",          type: "string"  },
+          { name: "colonia",          type: "string"  },
+          { name: "fecha",            type: "uint64"  },
+          { name: "totalAsistentes",  type: "uint32"  },
+          { name: "cupoMaximo",       type: "uint32"  },
+          { name: "coordinadorId",    type: "string"  },
+          { name: "hashVerificacion", type: "bytes32" },
+          { name: "publicadoEn",      type: "uint64"  },
         ],
       },
     ],
   },
   {
     type: "function",
-    name: "totalRegistros",
+    name: "totalActas",
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],
   },
   {
     type: "function",
-    name: "obtenerRegistros",
+    name: "obtenerActas",
     stateMutability: "view",
     inputs: [
       { name: "offset", type: "uint256" },
@@ -97,10 +105,24 @@ export const DOCUMENT_REGISTRY_ABI = [
   },
   {
     type: "function",
-    name: "listaRegistros",
+    name: "listaActas",
     stateMutability: "view",
     inputs: [{ name: "", type: "uint256" }],
     outputs: [{ name: "", type: "bytes32" }],
+  },
+  {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
+    name: "publicador",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
   },
 ] as const;
 

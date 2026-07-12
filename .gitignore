@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
@@ -30,7 +31,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — ignorar todos salvo el ejemplo de referencia
+# env files — ignorar TODO (incluye .env.local con claves privadas), salvo ejemplos
 .env*
 !.env*.example
 
@@ -40,3 +41,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# contratos / Hardhat — el subdirectorio contracts/ tiene su propio .gitignore;
+# estas entradas cubren por si se ejecuta hardhat desde la raíz
+contracts/artifacts/
+contracts/cache/
+contracts/dist/
+contracts/typechain-types/

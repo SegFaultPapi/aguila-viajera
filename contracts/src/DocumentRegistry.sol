@@ -3,19 +3,22 @@ pragma solidity ^0.8.20;
 
 /**
  * @title  DocumentRegistry — Águila Viajera / COPACO
- * @notice Registro append-only e inmutable de excursiones comunitarias y
- *         actas de asistencia para COPACO (Comités de Participación Ciudadana),
- *         Iztapalapa, CDMX.
+ * @notice Registro público e inmutable de actas de excursiones comunitarias
+ *         para COPACO (Comités de Participación Ciudadana), Iztapalapa, CDMX.
  *
- * @dev    Solo almacena hashes SHA-256 del contenido; los datos reales
- *         (nombres, fechas, participantes) permanecen off-chain.  Esto
- *         protege la privacidad de los adultos mayores y mantiene los
- *         gas costs al mínimo.
+ * @dev    Guarda datos agregados de cada excursión (destino, colonia, fecha,
+ *         número de asistentes, cupo) para que cualquiera pueda verificar en
+ *         Etherscan que la excursión ocurrió y cuánta gente asistió — SIN
+ *         nombres, teléfonos, datos de salud ni fotografías. Esos datos
+ *         nunca tocan la cadena; solo viven en la base de datos off-chain.
  *
- *         Invariante de integridad: una vez que un registroId es creado,
- *         su contenidoHash, autor y timestamp son inmutables para siempre.
- *         Cualquier modificación off-chain producirá un hash diferente al
- *         registrado, detectando la alteración.
+ *         Solo una wallet institucional autorizada ("publicador") puede
+ *         escribir. Esa wallet vive en el backend (servidor), no en la del
+ *         coordinador — el coordinador nunca firma ni conecta una wallet,
+ *         solo presiona un botón en la app.
+ *
+ *         Invariante de integridad: una vez publicada, un acta es inmutable
+ *         para siempre. No existen funciones de modificación ni de borrado.
  *
  *         Fase 3 del roadmap — ver PRD §6 y plan-desarrollo.md Fase 3.
  */
@@ -25,177 +28,183 @@ contract DocumentRegistry {
     // Tipos de datos
     // ─────────────────────────────────────────────────────────────────────────
 
-    struct Registro {
-        /// @dev SHA-256 del JSON canónico del documento off-chain (32 bytes)
-        bytes32 contenidoHash;
-        /// @dev Wallet institucional COPACO que firmó la transacción
-        address autor;
-        /// @dev block.timestamp al momento del anclaje (segundos Unix)
-        uint64  timestamp;
-        /// @dev "excursion" | "checkin" | "inscripcion" | "perfil_salud"
-        string  tipo;
-        /// @dev ID del registro en la base de datos off-chain
-        string  referenciaId;
+    struct Acta {
+        /// @dev ID de la excursión en la base de datos off-chain (ej. "ex-1001")
+        string  excursionId;
+        /// @dev Nombre del destino (ej. "Museo Nacional de Antropología")
+        string  destino;
+        /// @dev Colonia de origen (ej. "San Miguel Teotongo")
+        string  colonia;
+        /// @dev Fecha de la excursión, Unix timestamp
+        uint64  fecha;
+        /// @dev Número de personas que asistieron (sin IDs ni nombres)
+        uint32  totalAsistentes;
+        /// @dev Cupo máximo planeado para la excursión
+        uint32  cupoMaximo;
+        /// @dev Identificador institucional del coordinador (no un nombre)
+        string  coordinadorId;
+        /// @dev Huella SHA-256 del acta completa off-chain, para detectar
+        ///      alteraciones posteriores en la lista de asistentes. Se calcula
+        ///      sobre IDs internos, nunca sobre nombres o datos de salud.
+        bytes32 hashVerificacion;
+        /// @dev block.timestamp al momento de la publicación
+        uint64  publicadoEn;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Estado
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// @notice registroId → Registro. Append-only: nunca se borra ni actualiza.
-    mapping(bytes32 => Registro) public registros;
+    /// @notice actaId → Acta. Append-only: nunca se borra ni actualiza.
+    mapping(bytes32 => Acta) public actas;
 
-    /// @notice Lista completa de registroIds en orden de creación.
-    bytes32[] public listaRegistros;
+    /// @notice Lista completa de actaIds en orden de publicación.
+    bytes32[] public listaActas;
+
+    /// @notice Cuenta institucional (multisig/Safe en producción) que puede rotar al publicador.
+    address public owner;
+
+    /// @notice Única wallet autorizada para publicar actas — vive en el backend,
+    ///         nunca en el dispositivo del coordinador.
+    address public publicador;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Eventos
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * @notice Emitido cada vez que se ancla un nuevo registro.
-     * @param registroId    ID único de este anclaje (keccak256 de los parámetros).
-     * @param contenidoHash SHA-256 del documento off-chain.
-     * @param autor         Wallet que firmó la transacción.
-     * @param timestamp     block.timestamp del anclaje.
-     * @param tipo          Tipo de registro ("excursion", "checkin", etc.)
-     * @param referenciaId  ID del registro en la base de datos off-chain.
+     * @notice Emitido cada vez que se publica una nueva acta.
      */
-    event RegistroAnclado(
-        bytes32 indexed registroId,
-        bytes32 indexed contenidoHash,
-        address indexed autor,
-        uint64          timestamp,
-        string          tipo,
-        string          referenciaId
+    event ActaPublicada(
+        bytes32 indexed actaId,
+        string  excursionId,
+        string  destino,
+        uint32  totalAsistentes,
+        uint64  publicadoEn
     );
+
+    /// @notice Emitido cuando el owner rota la wallet publicadora (ej. por compromiso de clave).
+    event PublicadorActualizado(address indexed anterior, address indexed nuevo);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Errores
     // ─────────────────────────────────────────────────────────────────────────
 
-    error RegistroYaExiste(bytes32 registroId);
-    error HashVacio();
-    error TipoVacio();
-    error ReferenciaVacia();
+    error NoAutorizado();
+    error ExcursionIdVacio();
+    error ActaYaExiste(bytes32 actaId);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Modificadores
+    // ─────────────────────────────────────────────────────────────────────────
+
+    modifier soloOwner() {
+        if (msg.sender != owner) revert NoAutorizado();
+        _;
+    }
+
+    modifier soloPublicador() {
+        if (msg.sender != publicador) revert NoAutorizado();
+        _;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Constructor
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * @param _publicador  Wallet institucional autorizada a publicar actas.
+     *                     Si se pasa address(0), el deployer también es el publicador.
+     */
+    constructor(address _publicador) {
+        owner = msg.sender;
+        publicador = _publicador == address(0) ? msg.sender : _publicador;
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Funciones principales
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * @notice Ancla el hash SHA-256 de un documento en la cadena.
-     *         Esta operación es irreversible e inmutable — no hay función de
-     *         modificación ni de eliminación.
+     * @notice Publica el acta de una excursión: destino, colonia, fecha y
+     *         cuánta gente asistió. Solo la wallet institucional (publicador)
+     *         puede llamar esta función — el coordinador nunca firma.
      *
-     * @param contenidoHash  Hash SHA-256 del JSON canónico del documento (bytes32).
-     *                       Calcular off-chain con: keccak256(sha256(canonicalJSON(doc))).
-     *                       Ver lib/crypto.ts en el frontend para la implementación.
-     * @param tipo           Tipo de registro: "excursion", "checkin", "inscripcion".
-     * @param referenciaId   ID del registro en la base de datos off-chain (ej. "ex-1001").
-     *
-     * @return registroId    Identificador único de este anclaje en la cadena.
-     *                       Guardar este valor en la base de datos para verificación futura.
+     * @return actaId  Identificador único de esta acta en la cadena.
      */
-    function anclar(
-        bytes32        contenidoHash,
-        string calldata tipo,
-        string calldata referenciaId
-    ) external returns (bytes32 registroId) {
-        if (contenidoHash == bytes32(0))            revert HashVacio();
-        if (bytes(tipo).length == 0)                revert TipoVacio();
-        if (bytes(referenciaId).length == 0)        revert ReferenciaVacia();
+    function publicarActa(
+        string calldata excursionId,
+        string calldata destino,
+        string calldata colonia,
+        uint64          fecha,
+        uint32          totalAsistentes,
+        uint32          cupoMaximo,
+        string calldata coordinadorId,
+        bytes32         hashVerificacion
+    ) external soloPublicador returns (bytes32 actaId) {
+        if (bytes(excursionId).length == 0) revert ExcursionIdVacio();
 
-        // El registroId es determinista: mismos inputs → mismo ID.
-        // Si el coordinador llama anclar() dos veces con el mismo documento,
-        // la segunda llamada revierte, protegiendo contra duplicados.
-        registroId = keccak256(
-            abi.encodePacked(contenidoHash, msg.sender, block.timestamp, referenciaId)
-        );
+        // El actaId es determinista: misma excursión + misma fecha → mismo ID.
+        // Publicar dos veces la misma acta revierte, protegiendo contra duplicados.
+        actaId = keccak256(abi.encodePacked(excursionId, fecha));
 
-        if (registros[registroId].timestamp != 0) {
-            revert RegistroYaExiste(registroId);
+        if (actas[actaId].publicadoEn != 0) {
+            revert ActaYaExiste(actaId);
         }
 
-        registros[registroId] = Registro({
-            contenidoHash: contenidoHash,
-            autor:         msg.sender,
-            timestamp:     uint64(block.timestamp),
-            tipo:          tipo,
-            referenciaId:  referenciaId
+        actas[actaId] = Acta({
+            excursionId:      excursionId,
+            destino:          destino,
+            colonia:          colonia,
+            fecha:            fecha,
+            totalAsistentes:  totalAsistentes,
+            cupoMaximo:       cupoMaximo,
+            coordinadorId:    coordinadorId,
+            hashVerificacion: hashVerificacion,
+            publicadoEn:      uint64(block.timestamp)
         });
 
-        listaRegistros.push(registroId);
+        listaActas.push(actaId);
 
-        emit RegistroAnclado(
-            registroId,
-            contenidoHash,
-            msg.sender,
-            uint64(block.timestamp),
-            tipo,
-            referenciaId
-        );
+        emit ActaPublicada(actaId, excursionId, destino, totalAsistentes, uint64(block.timestamp));
 
-        return registroId;
+        return actaId;
+    }
+
+    /**
+     * @notice Rota la wallet publicadora (ej. si la clave del backend se compromete).
+     *         Solo el owner institucional puede hacerlo.
+     */
+    function cambiarPublicador(address nuevo) external soloOwner {
+        emit PublicadorActualizado(publicador, nuevo);
+        publicador = nuevo;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Funciones de verificación (read-only, sin gas para el usuario final)
+    // Funciones de lectura (públicas, sin gas, sin wallet)
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * @notice Verifica si el contenido actual de un documento coincide con
-     *         el hash que fue anclado originalmente.
-     *
-     * @param registroId    ID del registro a verificar (devuelto por anclar()).
-     * @param contenidoHash Hash SHA-256 del documento actual (recalculado off-chain).
-     *
-     * @return integro    true si el documento no ha sido alterado.
-     * @return autor      Wallet que ancló el registro.
-     * @return timestamp  Timestamp Unix del anclaje.
-     */
-    function verificar(
-        bytes32 registroId,
-        bytes32 contenidoHash
-    )
-        external
-        view
-        returns (bool integro, address autor, uint64 timestamp)
-    {
-        Registro storage r = registros[registroId];
-        return (r.contenidoHash == contenidoHash, r.autor, r.timestamp);
+    /// @notice Devuelve el acta completa por su ID.
+    function obtenerActa(bytes32 actaId) external view returns (Acta memory) {
+        return actas[actaId];
+    }
+
+    /// @notice Número total de actas publicadas.
+    function totalActas() external view returns (uint256) {
+        return listaActas.length;
     }
 
     /**
-     * @notice Devuelve el registro completo por su ID.
-     * @param registroId  ID del registro a consultar.
-     */
-    function obtenerRegistro(bytes32 registroId)
-        external
-        view
-        returns (Registro memory)
-    {
-        return registros[registroId];
-    }
-
-    /**
-     * @notice Número total de registros anclados.
-     */
-    function totalRegistros() external view returns (uint256) {
-        return listaRegistros.length;
-    }
-
-    /**
-     * @notice Devuelve un slice de listaRegistros para paginación.
+     * @notice Devuelve un slice de listaActas para paginación.
      * @param offset  Índice de inicio (0-based).
      * @param limite  Número máximo de IDs a devolver.
      */
-    function obtenerRegistros(uint256 offset, uint256 limite)
+    function obtenerActas(uint256 offset, uint256 limite)
         external
         view
         returns (bytes32[] memory)
     {
-        uint256 total = listaRegistros.length;
+        uint256 total = listaActas.length;
         if (offset >= total) return new bytes32[](0);
 
         uint256 fin = offset + limite;
@@ -203,7 +212,7 @@ contract DocumentRegistry {
 
         bytes32[] memory resultado = new bytes32[](fin - offset);
         for (uint256 i = offset; i < fin; i++) {
-            resultado[i - offset] = listaRegistros[i];
+            resultado[i - offset] = listaActas[i];
         }
         return resultado;
     }

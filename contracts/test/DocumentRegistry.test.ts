@@ -4,120 +4,165 @@ import { ethers } from "hardhat";
 
 describe("DocumentRegistry", function () {
   async function deployFixture() {
-    const [owner, coordinador, otro] = await ethers.getSigners();
+    const [owner, publicador, coordinadorWallet, otro] = await ethers.getSigners();
     const DocumentRegistry = await ethers.getContractFactory("DocumentRegistry");
-    const registry = await DocumentRegistry.deploy();
-    return { registry, owner, coordinador, otro };
+    const registry = await DocumentRegistry.deploy(publicador.address);
+    return { registry, owner, publicador, coordinadorWallet, otro };
   }
 
-  // SHA-256 de '{"test":"valor"}' como bytes32 para pruebas
-  const HASH_PRUEBA = ethers.id("excursion-test-copaco-iztapalapa") as `0x${string}`;
-  const TIPO = "excursion";
-  const REF_ID = "ex-1001";
+  const HASH_VERIFICACION = ethers.id("acta-ex-1001-copaco-iztapalapa") as `0x${string}`;
+  const EXCURSION_ID = "ex-1001";
+  const DESTINO = "Museo Nacional de Antropología";
+  const COLONIA = "San Miguel Teotongo";
+  const FECHA = Math.floor(Date.now() / 1000);
+  const TOTAL_ASISTENTES = 18;
+  const CUPO_MAXIMO = 25;
+  const COORDINADOR_ID = "u-raul";
+
+  async function publicarActaPrueba(registry: any, publicador: any) {
+    return registry
+      .connect(publicador)
+      .publicarActa(
+        EXCURSION_ID,
+        DESTINO,
+        COLONIA,
+        FECHA,
+        TOTAL_ASISTENTES,
+        CUPO_MAXIMO,
+        COORDINADOR_ID,
+        HASH_VERIFICACION
+      );
+  }
 
   describe("Despliegue", function () {
-    it("Inicia con 0 registros", async function () {
+    it("Inicia con 0 actas", async function () {
       const { registry } = await loadFixture(deployFixture);
-      expect(await registry.totalRegistros()).to.equal(0);
+      expect(await registry.totalActas()).to.equal(0);
+    });
+
+    it("Asigna owner y publicador correctamente", async function () {
+      const { registry, owner, publicador } = await loadFixture(deployFixture);
+      expect(await registry.owner()).to.equal(owner.address);
+      expect(await registry.publicador()).to.equal(publicador.address);
+    });
+
+    it("Si se despliega con address(0), el deployer también es el publicador", async function () {
+      const DocumentRegistry = await ethers.getContractFactory("DocumentRegistry");
+      const [deployer] = await ethers.getSigners();
+      const registry = await DocumentRegistry.deploy(ethers.ZeroAddress);
+      expect(await registry.publicador()).to.equal(deployer.address);
     });
   });
 
-  describe("anclar()", function () {
-    it("Ancla un registro y emite el evento RegistroAnclado", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
+  describe("publicarActa()", function () {
+    it("Publica un acta y emite el evento ActaPublicada", async function () {
+      const { registry, publicador } = await loadFixture(deployFixture);
 
-      const tx = await registry.connect(coordinador).anclar(HASH_PRUEBA, TIPO, REF_ID);
+      const tx = await publicarActaPrueba(registry, publicador);
       const receipt = await tx.wait();
 
-      // Verificar que el evento se emitió
       const evento = receipt?.logs.find(
-        (log) => registry.interface.parseLog(log)?.name === "RegistroAnclado"
+        (log: any) => registry.interface.parseLog(log)?.name === "ActaPublicada"
       );
       expect(evento).to.not.be.undefined;
-
-      // Total de registros incrementó
-      expect(await registry.totalRegistros()).to.equal(1);
+      expect(await registry.totalActas()).to.equal(1);
     });
 
-    it("Guarda autor, hash y tipo correctamente", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
+    it("Guarda los datos agregados correctamente — sin nombres ni datos personales", async function () {
+      const { registry, publicador } = await loadFixture(deployFixture);
 
-      const tx = await registry.connect(coordinador).anclar(HASH_PRUEBA, TIPO, REF_ID);
-      await tx.wait();
+      await publicarActaPrueba(registry, publicador);
+      const actaId = await registry.listaActas(0);
+      const acta = await registry.obtenerActa(actaId);
 
-      const registroId = (await registry.listaRegistros(0)) as `0x${string}`;
-      const registro = await registry.obtenerRegistro(registroId);
-
-      expect(registro.contenidoHash).to.equal(HASH_PRUEBA);
-      expect(registro.autor).to.equal(coordinador.address);
-      expect(registro.tipo).to.equal(TIPO);
-      expect(registro.referenciaId).to.equal(REF_ID);
-      expect(registro.timestamp).to.be.greaterThan(0);
+      expect(acta.excursionId).to.equal(EXCURSION_ID);
+      expect(acta.destino).to.equal(DESTINO);
+      expect(acta.colonia).to.equal(COLONIA);
+      expect(acta.totalAsistentes).to.equal(TOTAL_ASISTENTES);
+      expect(acta.cupoMaximo).to.equal(CUPO_MAXIMO);
+      expect(acta.coordinadorId).to.equal(COORDINADOR_ID);
+      expect(acta.hashVerificacion).to.equal(HASH_VERIFICACION);
+      expect(acta.publicadoEn).to.be.greaterThan(0);
     });
 
-    it("Revierte si el hash es cero", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
+    it("Revierte si quien llama no es el publicador (el coordinador no puede firmar)", async function () {
+      const { registry, coordinadorWallet } = await loadFixture(deployFixture);
       await expect(
-        registry.connect(coordinador).anclar(ethers.ZeroHash, TIPO, REF_ID)
-      ).to.be.revertedWithCustomError(registry, "HashVacio");
+        registry
+          .connect(coordinadorWallet)
+          .publicarActa(
+            EXCURSION_ID,
+            DESTINO,
+            COLONIA,
+            FECHA,
+            TOTAL_ASISTENTES,
+            CUPO_MAXIMO,
+            COORDINADOR_ID,
+            HASH_VERIFICACION
+          )
+      ).to.be.revertedWithCustomError(registry, "NoAutorizado");
     });
 
-    it("Revierte si tipo está vacío", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
+    it("Revierte si excursionId está vacío", async function () {
+      const { registry, publicador } = await loadFixture(deployFixture);
       await expect(
-        registry.connect(coordinador).anclar(HASH_PRUEBA, "", REF_ID)
-      ).to.be.revertedWithCustomError(registry, "TipoVacio");
+        registry
+          .connect(publicador)
+          .publicarActa("", DESTINO, COLONIA, FECHA, TOTAL_ASISTENTES, CUPO_MAXIMO, COORDINADOR_ID, HASH_VERIFICACION)
+      ).to.be.revertedWithCustomError(registry, "ExcursionIdVacio");
     });
 
-    it("Revierte si referenciaId está vacío", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
-      await expect(
-        registry.connect(coordinador).anclar(HASH_PRUEBA, TIPO, "")
-      ).to.be.revertedWithCustomError(registry, "ReferenciaVacia");
+    it("Revierte si la misma excursión+fecha ya fue publicada", async function () {
+      const { registry, publicador } = await loadFixture(deployFixture);
+      await publicarActaPrueba(registry, publicador);
+      await expect(publicarActaPrueba(registry, publicador)).to.be.revertedWithCustomError(
+        registry,
+        "ActaYaExiste"
+      );
     });
   });
 
-  describe("verificar()", function () {
-    it("Devuelve integro=true cuando el hash coincide", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
-
-      await registry.connect(coordinador).anclar(HASH_PRUEBA, TIPO, REF_ID);
-      const registroId = await registry.listaRegistros(0);
-
-      const [integro, autor] = await registry.verificar(registroId, HASH_PRUEBA);
-      expect(integro).to.be.true;
-      expect(autor).to.equal(coordinador.address);
+  describe("cambiarPublicador()", function () {
+    it("El owner puede rotar la wallet publicadora", async function () {
+      const { registry, owner, otro } = await loadFixture(deployFixture);
+      await registry.connect(owner).cambiarPublicador(otro.address);
+      expect(await registry.publicador()).to.equal(otro.address);
     });
 
-    it("Devuelve integro=false cuando el hash NO coincide (detección de alteración)", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
-
-      await registry.connect(coordinador).anclar(HASH_PRUEBA, TIPO, REF_ID);
-      const registroId = await registry.listaRegistros(0);
-
-      const hashAlterado = ethers.id("contenido-modificado-despues");
-      const [integro] = await registry.verificar(registroId, hashAlterado);
-      expect(integro).to.be.false;
+    it("Revierte si quien llama no es el owner", async function () {
+      const { registry, publicador, otro } = await loadFixture(deployFixture);
+      await expect(
+        registry.connect(publicador).cambiarPublicador(otro.address)
+      ).to.be.revertedWithCustomError(registry, "NoAutorizado");
     });
   });
 
-  describe("obtenerRegistros() — paginación", function () {
+  describe("obtenerActas() — paginación", function () {
     it("Devuelve slice correcto con offset y límite", async function () {
-      const { registry, coordinador } = await loadFixture(deployFixture);
+      const { registry, publicador } = await loadFixture(deployFixture);
 
-      // Anclar 3 registros
       for (let i = 0; i < 3; i++) {
-        const hash = ethers.id(`excursion-${i}`) as `0x${string}`;
-        await registry.connect(coordinador).anclar(hash, TIPO, `ex-${i}`);
+        await registry
+          .connect(publicador)
+          .publicarActa(
+            `ex-${i}`,
+            DESTINO,
+            COLONIA,
+            FECHA + i,
+            TOTAL_ASISTENTES,
+            CUPO_MAXIMO,
+            COORDINADOR_ID,
+            HASH_VERIFICACION
+          );
       }
 
-      const pagina = await registry.obtenerRegistros(1, 2);
+      const pagina = await registry.obtenerActas(1, 2);
       expect(pagina.length).to.equal(2);
     });
 
     it("Devuelve array vacío si offset >= total", async function () {
       const { registry } = await loadFixture(deployFixture);
-      const pagina = await registry.obtenerRegistros(10, 5);
+      const pagina = await registry.obtenerActas(10, 5);
       expect(pagina.length).to.equal(0);
     });
   });

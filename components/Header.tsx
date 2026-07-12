@@ -102,15 +102,17 @@ export function Header() {
               <span className="text-sm font-semibold truncate max-w-[120px]">
                 {currentUser.nombre.split(" ")[0]}
               </span>
-              <span
-                className="hidden sm:inline text-xs rounded-full px-2 py-0.5 font-semibold"
-                style={{
-                  background: rolColor(currentUser.rol).bg,
-                  color: rolColor(currentUser.rol).text,
-                }}
-              >
-                {rolLabel(currentUser.rol)}
-              </span>
+              {currentUser.rol !== "adulto_mayor" && (
+                <span
+                  className="hidden sm:inline text-xs rounded-full px-2 py-0.5 font-semibold"
+                  style={{
+                    background: rolColor(currentUser.rol).bg,
+                    color: rolColor(currentUser.rol).text,
+                  }}
+                >
+                  {rolLabel(currentUser.rol)}
+                </span>
+              )}
               <span
                 className="text-xs ml-0.5"
                 style={{ color: "var(--color-ink-soft)" }}
