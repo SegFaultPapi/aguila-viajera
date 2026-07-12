@@ -12,6 +12,11 @@ import {
 } from "@/lib/crypto";
 import { anclarRegistro } from "@/lib/blockchain/anchoring";
 import { etherscanTxUrl, RED_ACTIVA } from "@/lib/blockchain/config";
+import {
+  checkinsDeExcursion,
+  marcarSincronizados,
+  registrarCheckinLocal,
+} from "@/lib/offline-checkin";
 
 const MOVILIDAD_ICONO: Record<Movilidad, string> = {
   independiente: "🚶",
@@ -39,7 +44,54 @@ export default function PanelParticipantesPage() {
   const [anclando, setAnclando] = useState(false);
   const [errorAnclaje, setErrorAnclaje] = useState<string | null>(null);
 
+  // ── Check-in offline-first (PRD §4.6) ─────────────────────────────────────
+  const [enLinea, setEnLinea] = useState(true);
+  const [pendientesSync, setPendientesSync] = useState<Set<string>>(new Set());
+
   const excursion = excursiones.find((e) => e.id === id);
+
+  // Al montar: restaurar check-ins guardados localmente (el store en memoria
+  // se resetea en cada recarga, pero la cola local no) y detectar conectividad.
+  useEffect(() => {
+    if (!excursion) return;
+    setEnLinea(window.navigator.onLine);
+
+    const guardados = checkinsDeExcursion(excursion.id);
+    const pendientes = new Set(guardados.filter((c) => !c.sincronizado).map((c) => c.inscripcionId));
+    setPendientesSync(pendientes);
+    for (const c of guardados) {
+      const insc = inscripcionesDe(excursion.id).find((i) => i.id === c.inscripcionId);
+      if (insc && insc.asistenciaConfirmada !== c.asistio) {
+        void marcarAsistencia(c.inscripcionId, c.asistio);
+      }
+    }
+
+    const alVolverEnLinea = () => {
+      setEnLinea(true);
+      marcarSincronizados(excursion.id);
+      setPendientesSync(new Set());
+    };
+    const alPerderConexion = () => setEnLinea(false);
+    window.addEventListener("online", alVolverEnLinea);
+    window.addEventListener("offline", alPerderConexion);
+    return () => {
+      window.removeEventListener("online", alVolverEnLinea);
+      window.removeEventListener("offline", alPerderConexion);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excursion?.id]);
+
+  const handleMarcarAsistencia = (inscripcionId: string, asistio: boolean) => {
+    if (!excursion) return;
+    void marcarAsistencia(inscripcionId, asistio);
+    registrarCheckinLocal(inscripcionId, excursion.id, asistio, enLinea);
+    setPendientesSync((prev) => {
+      const next = new Set(prev);
+      if (enLinea) next.delete(inscripcionId);
+      else next.add(inscripcionId);
+      return next;
+    });
+  };
 
   // Calcular hash del acta — se recalcula cuando cambia la asistencia
   // Usa contenidoCanonicoActa: nombres y datos personales NUNCA tocan la cadena,
@@ -118,6 +170,13 @@ export default function PanelParticipantesPage() {
         </div>
       </div>
 
+      {!enLinea && (
+        <div className="alert-box text-sm" role="status">
+          Sin conexión — los check-ins se guardan en este dispositivo y se sincronizarán
+          automáticamente cuando vuelva la señal.
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold">Confirmados</h2>
         {confirmadas.length === 0 && (
@@ -145,11 +204,20 @@ export default function PanelParticipantesPage() {
                     type="checkbox"
                     className="h-6 w-6"
                     checked={insc.asistenciaConfirmada}
-                    onChange={(e) => { void marcarAsistencia(insc.id, e.target.checked); }}
+                    onChange={(e) => handleMarcarAsistencia(insc.id, e.target.checked)}
                   />
                   Asistió
                 </label>
               </div>
+
+              {pendientesSync.has(insc.id) && (
+                <span
+                  className="badge w-fit"
+                  style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}
+                >
+                  Guardado en el dispositivo · pendiente de sincronizar
+                </span>
+              )}
 
               {(insc.llevaAcompanante || (perfil?.acompananteRequerido && !insc.llevaAcompanante)) && (
                 <div className="flex flex-wrap gap-2">

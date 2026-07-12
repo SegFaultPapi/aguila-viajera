@@ -78,8 +78,8 @@ function TopBar() {
           <img
             src="/images/ui/logo-aguila.png"
             alt="Águila Viajera"
-            width={44}
-            height={44}
+            width={56}
+            height={56}
             style={{ flexShrink: 0 }}
           />
           <div className="flex items-baseline gap-2">

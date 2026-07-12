@@ -30,6 +30,12 @@ interface StoreState {
   usuarioPorEmail: (email: string) => Usuario | undefined;
   registrarUsuario: (data: Omit<Usuario, "id">) => Usuario;
   vincularFamiliar: (adultoId: string, familiarId: string) => void;
+  /** B4: Cancela una excursión publicada o reprogramada con motivo obligatorio */
+  cancelarExcursion: (excursionId: string, motivo: string) => void;
+  /** B4: Reprograma la fecha de una excursión y pone todas las inscripciones en "pendiente" */
+  reprogramarExcursion: (excursionId: string, nuevaFecha: string, motivo: string) => void;
+  /** B4: El inscrito confirma o declina la nueva fecha de una excursión reprogramada */
+  responderReprogramacion: (inscripcionId: string, respuesta: "confirmada" | "rechazada") => void;
 }
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -233,6 +239,84 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  // ── B4: Gestión de cancelación y reprogramación ───────────────────────────
+
+  const cancelarExcursion = useCallback(
+    (excursionId: string, motivo: string) => {
+      const ahora = new Date().toISOString();
+      setExcursiones((prev) =>
+        prev.map((e) =>
+          e.id === excursionId
+            ? {
+                ...e,
+                estado: "cancelada" as const,
+                motivoCambio: motivo,
+                historial: [
+                  ...e.historial,
+                  { fecha: ahora, autorId: currentUserId, accion: "Excursión cancelada", motivo },
+                ],
+              }
+            : e
+        )
+      );
+    },
+    [currentUserId]
+  );
+
+  const reprogramarExcursion = useCallback(
+    (excursionId: string, nuevaFecha: string, motivo: string) => {
+      const ahora = new Date().toISOString();
+      setExcursiones((prev) =>
+        prev.map((e) =>
+          e.id === excursionId
+            ? {
+                ...e,
+                estado: "reprogramada" as const,
+                fecha: nuevaFecha,
+                nuevaFecha,
+                motivoCambio: motivo,
+                historial: [
+                  ...e.historial,
+                  {
+                    fecha: ahora,
+                    autorId: currentUserId,
+                    accion: "Excursión reprogramada",
+                    motivo,
+                  },
+                ],
+              }
+            : e
+        )
+      );
+      // Marcar inscripciones activas como pendientes de respuesta
+      setInscripciones((prev) =>
+        prev.map((i) =>
+          i.excursionId === excursionId && i.estado !== "cancelada"
+            ? { ...i, respuestaReprogramacion: "pendiente" as const }
+            : i
+        )
+      );
+    },
+    [currentUserId]
+  );
+
+  const responderReprogramacion = useCallback(
+    (inscripcionId: string, respuesta: "confirmada" | "rechazada") => {
+      setInscripciones((prev) =>
+        prev.map((i) =>
+          i.id === inscripcionId
+            ? {
+                ...i,
+                respuestaReprogramacion: respuesta,
+                estado: respuesta === "rechazada" ? ("cancelada" as const) : i.estado,
+              }
+            : i
+        )
+      );
+    },
+    []
+  );
+
   const value: StoreState = {
     usuarios,
     excursiones,
@@ -255,6 +339,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     registrarUsuario,
     vincularFamiliar,
     registrarAnclajeBlockchain,
+    cancelarExcursion,
+    reprogramarExcursion,
+    responderReprogramacion,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

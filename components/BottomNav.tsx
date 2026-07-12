@@ -25,11 +25,17 @@ export function BottomNav() {
       ]
     : [
         { href: "/excursiones", icon: "🗺️", label: "Excursiones" },
-        { href: "/perfil-salud", icon: "🩺", label: "Mi información" },
+        { href: "/mis-excursiones", icon: "🎟️", label: "Mis reservas" },
+        { href: "/perfil-salud", icon: "🩺", label: "Mi info" },
       ];
 
   function isActive(href: string) {
-    if (href === "/excursiones") return pathname === "/excursiones" || (pathname?.startsWith("/excursiones") && !pathname.startsWith("/excursiones/"));
+    if (href === "/excursiones")
+      return (
+        pathname === "/excursiones" ||
+        (pathname?.startsWith("/excursiones") &&
+          !pathname.startsWith("/excursiones/"))
+      );
     return pathname?.startsWith(href);
   }
 

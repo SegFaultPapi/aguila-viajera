@@ -5,15 +5,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
 
-const NAV_LINKS = [
+const NAV_LINKS_COORDINADOR = [
   { href: "/excursiones", label: "Excursiones" },
+  { href: "/coordinador/nueva-excursion", label: "Nueva excursión" },
+];
+
+const NAV_LINKS_USUARIO = [
+  { href: "/excursiones", label: "Excursiones" },
+  { href: "/mis-excursiones", label: "Mis reservas" },
   { href: "/perfil-salud", label: "Mi información" },
-  { href: "/coordinador/nueva-excursion", label: "Coordinador" },
 ];
 
 export function Header() {
   const { currentUser } = useStore();
   const pathname = usePathname();
+  const navLinks =
+    currentUser.rol === "coordinador" ? NAV_LINKS_COORDINADOR : NAV_LINKS_USUARIO;
 
   return (
     <header
@@ -30,8 +37,8 @@ export function Header() {
           <Image
             src="/images/ui/logo-aguila.png"
             alt="Águila Viajera"
-            width={44}
-            height={44}
+            width={56}
+            height={56}
             className="flex-shrink-0"
             priority
           />
@@ -40,7 +47,7 @@ export function Header() {
 
         {/* Nav — solo desktop */}
         <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
-          {NAV_LINKS.map((link) => {
+          {navLinks.map((link) => {
             const active = pathname?.startsWith(link.href);
             return (
               <Link

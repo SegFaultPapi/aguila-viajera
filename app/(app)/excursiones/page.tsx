@@ -89,6 +89,16 @@ function ExcursionCard({
               👥 Requiere acompañante
             </span>
           )}
+          {excursion.estado === "reprogramada" && (
+            <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
+              Fecha cambiada
+            </span>
+          )}
+          {excursion.estado === "cancelada" && (
+            <span className="badge" style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}>
+              Cancelada
+            </span>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
@@ -122,10 +132,19 @@ export default function ListadoExcursiones() {
   );
   const [colonia, setColonia] = useState("todas");
 
+  // Excursiones activas visibles para todos (publicadas + reprogramadas)
   const visibles = excursiones
-    .filter((e) => e.estado === "publicada")
+    .filter((e) => e.estado === "publicada" || e.estado === "reprogramada")
     .filter((e) => colonia === "todas" || e.colonia === colonia)
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  // Para coordinadores: sus excursiones canceladas/completadas (no aparecen en el listado general)
+  const misExcursionesCerradas = excursiones.filter(
+    (e) =>
+      currentUser.rol === "coordinador" &&
+      e.coordinadorId === currentUser.id &&
+      (e.estado === "cancelada" || e.estado === "completada")
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -193,6 +212,30 @@ export default function ListadoExcursiones() {
           </div>
         )}
       </div>
+
+      {/* Historial de coordinador — excursiones canceladas / completadas */}
+      {misExcursionesCerradas.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-xl font-bold">Excursiones anteriores</h2>
+          <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
+            Excursiones que ya no aparecen en el listado principal.
+          </p>
+          {misExcursionesCerradas.map((ex) => {
+            const inscritos = inscripcionesDe(ex.id).filter((i) => i.estado === "confirmada").length;
+            const esCoord = currentUser.rol === "coordinador" && currentUser.id === ex.coordinadorId;
+            return (
+              <div key={ex.id} style={{ opacity: 0.8 }}>
+                <ExcursionCard
+                  excursion={ex}
+                  coordinadorNombre={usuarios.find((u) => u.id === ex.coordinadorId)?.nombre ?? "—"}
+                  inscritosConfirmados={inscritos}
+                  esCoordinador={esCoord}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -102,7 +102,7 @@ export interface Excursion {
   requiereAcompanante: boolean;
   queLlevar: string[];
   coordinadorId: string;
-  estado: "publicada" | "cancelada" | "completada";
+  estado: "publicada" | "cancelada" | "completada" | "reprogramada";
   creadoEn: string;
   imagenEmoji: string;
   descripcionLarga?: string;
@@ -113,6 +113,10 @@ export interface Excursion {
   eventLog?: EventoLog[];
   /** Anclaje del registro de creación en Ethereum */
   anclajeBlockchain?: AnclajeBlockchain;
+  /** Motivo de cancelación o reprogramación (campo obligatorio al ejecutar la acción) */
+  motivoCambio?: string;
+  /** Nueva fecha efectiva si fue reprogramada */
+  nuevaFecha?: string;
 }
 
 export type EstadoInscripcion = "confirmada" | "lista_espera" | "cancelada";
@@ -128,4 +132,6 @@ export interface Inscripcion {
   creadoEn: string;
   /** Hash SHA-256 (hex) del contenido de este check-in al momento de confirmarse */
   checkinHash?: string;
+  /** Respuesta del inscrito ante una reprogramación; "pendiente" = aún no responde */
+  respuestaReprogramacion?: "pendiente" | "confirmada" | "rechazada";
 }
