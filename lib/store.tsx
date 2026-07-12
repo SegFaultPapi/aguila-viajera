@@ -22,6 +22,7 @@ interface StoreState {
   marcarAsistencia: (inscripcionId: string, asistio: boolean) => void;
   usuarioById: (id: string) => Usuario | undefined;
   usuarioPorTelefono: (telefono: string) => Usuario | undefined;
+  usuarioPorEmail: (email: string) => Usuario | undefined;
   registrarUsuario: (data: Omit<Usuario, "id">) => Usuario;
   vincularFamiliar: (adultoId: string, familiarId: string) => void;
 }
@@ -57,6 +58,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (telefono: string) => {
       const norm = normalizarTelefono(telefono);
       return usuarios.find((u) => normalizarTelefono(u.telefono) === norm);
+    },
+    [usuarios]
+  );
+
+  const usuarioPorEmail = useCallback(
+    (email: string) => {
+      const norm = email.trim().toLowerCase();
+      return usuarios.find((u) => u.email?.toLowerCase() === norm);
     },
     [usuarios]
   );
@@ -197,6 +206,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     marcarAsistencia,
     usuarioById,
     usuarioPorTelefono,
+    usuarioPorEmail,
     registrarUsuario,
     vincularFamiliar,
   };

@@ -15,7 +15,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={PRIVY_APP_ID}
       config={{
-        loginMethods: ["sms"],
+        loginMethods: ["email"],
         appearance: {
           theme: "light",
           logo: "",

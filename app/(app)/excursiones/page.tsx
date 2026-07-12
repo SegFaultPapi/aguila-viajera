@@ -63,7 +63,7 @@ function ExcursionCard({
         <span className="text-2xl font-extrabold leading-none" style={{ color: "var(--color-primary)" }}>
           {dia}
         </span>
-        <span className="text-xs font-bold uppercase" style={{ color: "var(--color-primary)" }}>
+        <span className="text-sm font-bold uppercase" style={{ color: "var(--color-primary)" }}>
           {mes}
         </span>
       </div>
@@ -73,11 +73,11 @@ function ExcursionCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-2xl flex-shrink-0" aria-hidden>{excursion.imagenEmoji}</span>
-            <h2 className="text-lg font-extrabold leading-tight truncate">{excursion.destino}</h2>
+            <h2 className="text-xl font-extrabold leading-tight truncate">{excursion.destino}</h2>
           </div>
           {dias <= 7 && dias > 0 && (
             <span
-              className="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-bold"
+              className="flex-shrink-0 rounded-full px-2 py-0.5 text-sm font-bold"
               style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
             >
               En {dias}d
@@ -85,18 +85,18 @@ function ExcursionCard({
           )}
         </div>
 
-        <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+        <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
           📍 {excursion.colonia} · {excursion.horaSalida}h
         </p>
 
         {/* Barra de cupo */}
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium" style={{ color: "var(--color-ink-soft)" }}>
+            <span className="text-sm font-medium" style={{ color: "var(--color-ink-soft)" }}>
               {cupoLleno ? "Cupo lleno" : pocosLugares ? `${excursion.cupoMaximo - inscritosConfirmados} lugares disponibles` : `${inscritosConfirmados}/${excursion.cupoMaximo} inscritos`}
             </span>
             {excursion.costo === 0 && (
-              <span className="badge badge-success text-xs py-0.5 px-2">Gratuito</span>
+              <span className="badge badge-success">Gratuito</span>
             )}
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-border)" }}>
@@ -125,13 +125,13 @@ function ExcursionCard({
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
+          <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
             Coordina: {coordinadorNombre}
           </p>
           {esCoordinador && (
             <Link
               href={`/coordinador/excursiones/${excursion.id}/participantes`}
-              className="text-xs font-bold"
+              className="text-sm font-bold"
               style={{ color: "var(--color-primary)" }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -166,7 +166,7 @@ export default function ListadoExcursiones() {
     <div className="flex flex-col gap-5">
       {/* Cabecera */}
       <div>
-        <h1 className="text-2xl font-extrabold">Próximas excursiones</h1>
+        <h1 className="text-3xl font-extrabold">Próximas excursiones</h1>
         <p className="mt-0.5 text-base" style={{ color: "var(--color-ink-soft)" }}>
           Organizadas por comisiones COPACO en Iztapalapa.
         </p>
@@ -180,11 +180,11 @@ export default function ListadoExcursiones() {
         >
           <span className="text-3xl flex-shrink-0" aria-hidden>{proxima.imagenEmoji}</span>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
+            <p className="text-sm font-bold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
               Próxima excursión
             </p>
-            <p className="font-extrabold truncate">{proxima.destino}</p>
-            <p className="text-sm" style={{ color: "var(--color-primary)" }}>
+            <p className="text-lg font-extrabold truncate">{proxima.destino}</p>
+            <p className="text-base" style={{ color: "var(--color-primary)" }}>
               {formatFecha(proxima.fecha)}
             </p>
           </div>
@@ -200,7 +200,7 @@ export default function ListadoExcursiones() {
 
       {/* Filtro */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold" style={{ color: "var(--color-ink-soft)" }}>
+        <span className="text-base font-semibold" style={{ color: "var(--color-ink-soft)" }}>
           Colonia:
         </span>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -208,7 +208,7 @@ export default function ListadoExcursiones() {
             <button
               key={c}
               onClick={() => setColonia(c)}
-              className="flex-shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold transition-all"
+              className="flex-shrink-0 rounded-full px-3 py-1.5 text-base font-semibold transition-all"
               style={{
                 background: colonia === c ? "var(--color-primary)" : "var(--color-bg-alt)",
                 color: colonia === c ? "white" : "var(--color-ink-soft)",
@@ -247,7 +247,7 @@ export default function ListadoExcursiones() {
             <span className="text-4xl" aria-hidden>🗺️</span>
             <p className="font-semibold">No hay excursiones para esta colonia todavía.</p>
             {currentUser.rol === "coordinador" && (
-              <Link href="/coordinador/nueva-excursion" className="btn-primary text-sm">
+              <Link href="/coordinador/nueva-excursion" className="btn-primary">
                 Crear la primera excursión →
               </Link>
             )}

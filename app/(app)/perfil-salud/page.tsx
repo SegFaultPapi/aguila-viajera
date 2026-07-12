@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { Medicamento, Movilidad } from "@/lib/types";
+import { PlaceholderImage } from "@/components/PlaceholderImage";
 
 const CONDICIONES_COMUNES = ["Diabetes", "Hipertensión", "Demencia senil", "Cardiopatía"];
 
@@ -104,24 +105,30 @@ export default function PerfilSaludPage() {
   return (
     <form onSubmit={handleGuardar} className="flex flex-col gap-5 pb-32">
       {/* Cabecera */}
-      <div>
-        <h1 className="text-2xl font-extrabold">
-          Perfil de salud
-        </h1>
-        <p className="mt-0.5 font-semibold" style={{ color: "var(--color-primary)" }}>
-          {usuarioObjetivo.nombre}
-        </p>
-        {currentUser.rol === "familiar" && (
-          <p className="mt-0.5 text-sm" style={{ color: "var(--color-ink-soft)" }}>
-            Lo estás editando como familiar vinculado.
+      <div className="flex items-center gap-4">
+        <PlaceholderImage
+          label="Foto"
+          aspect="aspect-square"
+          shape="circle"
+          className="w-16 flex-shrink-0"
+        />
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold">Perfil de salud</h1>
+          <p className="mt-0.5 font-semibold truncate" style={{ color: "var(--color-primary)" }}>
+            {usuarioObjetivo.nombre}
           </p>
-        )}
-        {perfilExistente && (
-          <p className="mt-1 text-sm" style={{ color: "var(--color-ink-soft)" }}>
-            Última actualización: {formatFecha(perfilExistente.actualizadoEn)} ·{" "}
-            {usuarios.find((u) => u.id === perfilExistente.actualizadoPorId)?.nombre ?? "—"}
-          </p>
-        )}
+          {currentUser.rol === "familiar" && (
+            <p className="mt-0.5 text-sm" style={{ color: "var(--color-ink-soft)" }}>
+              Editando como familiar vinculado.
+            </p>
+          )}
+          {perfilExistente && (
+            <p className="mt-1 text-sm" style={{ color: "var(--color-ink-soft)" }}>
+              Actualizado: {formatFecha(perfilExistente.actualizadoEn)} ·{" "}
+              {usuarios.find((u) => u.id === perfilExistente.actualizadoPorId)?.nombre ?? "—"}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Aviso de privacidad */}

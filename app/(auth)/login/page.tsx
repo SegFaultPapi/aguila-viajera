@@ -8,31 +8,7 @@ import { PRIVY_ACTIVO } from "@/lib/providers";
 
 /* ── Tipos auxiliares ───────────────────────────────────── */
 
-type PasoUI = "telefono" | "otp" | "no_encontrado";
-
-/* ── Helpers ────────────────────────────────────────────── */
-
-function formatearTelefono(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 10);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2)}`;
-  return `${digits.slice(0, 2)} ${digits.slice(2, 6)} ${digits.slice(6)}`;
-}
-
-/** Normaliza cualquier formato de teléfono a dígitos puros (sin código de país) */
-function normalizarDigitos(tel: string): string {
-  const digits = tel.replace(/\D/g, "");
-  // Quitar código de país 52 si viene en E.164
-  if (digits.startsWith("52") && digits.length === 12) return digits.slice(2);
-  if (digits.startsWith("521") && digits.length === 13) return digits.slice(3);
-  return digits.slice(-10);
-}
-
-/** Convierte teléfono local (10 dígitos) a E.164 para Privy */
-function aE164(tel: string): string {
-  const digits = tel.replace(/\D/g, "").slice(-10);
-  return `+52${digits}`;
-}
+type PasoUI = "email" | "otp" | "no_encontrado";
 
 /* ── Subcomponente: inputs OTP ──────────────────────────── */
 
@@ -109,30 +85,26 @@ function OtpInputs({
   );
 }
 
-/* ── Login con Privy (SMS real) ─────────────────────────── */
+/* ── Login con Privy (email real) ───────────────────────── */
 
 function LoginConPrivy() {
-  // Importación dinámica de hooks de Privy para que Next.js no falle
-  // cuando Privy no está disponible en modo prototipo.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useLoginWithSms } = require("@privy-io/react-auth");
+  const { useLoginWithEmail } = require("@privy-io/react-auth");
   const router = useRouter();
-  const { usuarioPorTelefono, setCurrentUserId } = useStore();
+  const { usuarioPorEmail, setCurrentUserId } = useStore();
 
-  const [paso, setPaso] = useState<PasoUI>("telefono");
-  const [telefono, setTelefono] = useState("");
+  const [paso, setPaso] = useState<PasoUI>("email");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [errorMsg, setErrorMsg] = useState("");
 
-  const telefonoRef = useRef(telefono);
-  telefonoRef.current = telefono;
+  const emailRef = useRef(email);
+  emailRef.current = email;
 
   const onComplete = useCallback(
-    // Privy llama esto cuando el código es correcto
-    ({ user }: { user: { phone?: { number: string } } }) => {
-      const e164 = user?.phone?.number ?? "";
-      const norm = normalizarDigitos(e164 || telefonoRef.current);
-      const usuarioStore = usuarioPorTelefono(norm);
+    ({ user }: { user: { email?: { address: string } } }) => {
+      const address = user?.email?.address ?? emailRef.current;
+      const usuarioStore = usuarioPorEmail(address);
       if (usuarioStore) {
         setCurrentUserId(usuarioStore.id);
         router.push("/excursiones");
@@ -140,28 +112,28 @@ function LoginConPrivy() {
         setPaso("no_encontrado");
       }
     },
-    [usuarioPorTelefono, setCurrentUserId, router]
+    [usuarioPorEmail, setCurrentUserId, router]
   );
 
   const onError = useCallback((error: { message?: string }) => {
     setErrorMsg(error?.message ?? "Código incorrecto. Inténtalo de nuevo.");
   }, []);
 
-  const { sendCode, loginWithCode, state } = useLoginWithSms({ onComplete, onError });
+  const { sendCode, loginWithCode, state } = useLoginWithEmail({ onComplete, onError });
 
   const status: string = state?.status ?? "initial";
   const cargandoEnvio = status === "sending-code";
   const cargandoVerif = status === "submitting-code";
 
-  async function handleTelefonoSubmit(e: React.FormEvent) {
+  async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (telefono.replace(/\D/g, "").length < 10) return;
+    if (!email.includes("@")) return;
     setErrorMsg("");
     try {
-      await sendCode({ phoneNumber: aE164(telefono) });
+      await sendCode({ email });
       setPaso("otp");
     } catch {
-      setErrorMsg("No se pudo enviar el código. Verifica el número e intenta de nuevo.");
+      setErrorMsg("No se pudo enviar el código. Verifica el correo e intenta de nuevo.");
     }
   }
 
@@ -181,14 +153,14 @@ function LoginConPrivy() {
     <LoginUI
       paso={paso}
       setPaso={setPaso}
-      telefono={telefono}
-      setTelefono={setTelefono}
+      email={email}
+      setEmail={setEmail}
       otp={otp}
       setOtp={setOtp}
       errorMsg={errorMsg}
       cargandoEnvio={cargandoEnvio}
       cargandoVerif={cargandoVerif}
-      onTelefonoSubmit={handleTelefonoSubmit}
+      onEmailSubmit={handleEmailSubmit}
       onOtpSubmit={handleOtpSubmit}
       modoPrivy
     />
@@ -199,18 +171,18 @@ function LoginConPrivy() {
 
 function LoginMock() {
   const router = useRouter();
-  const { usuarioPorTelefono, setCurrentUserId } = useStore();
+  const { usuarioPorEmail, setCurrentUserId } = useStore();
 
-  const [paso, setPaso] = useState<PasoUI>("telefono");
-  const [telefono, setTelefono] = useState("");
+  const [paso, setPaso] = useState<PasoUI>("email");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(Array(4).fill(""));
   const [errorMsg, setErrorMsg] = useState("");
   const [cargandoEnvio, setCargandoEnvio] = useState(false);
   const [cargandoVerif, setCargandoVerif] = useState(false);
 
-  function handleTelefonoSubmit(e: React.FormEvent) {
+  function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (telefono.replace(/\D/g, "").length < 10) return;
+    if (!email.includes("@")) return;
     setCargandoEnvio(true);
     setTimeout(() => { setCargandoEnvio(false); setPaso("otp"); }, 900);
   }
@@ -222,7 +194,7 @@ function LoginMock() {
     setCargandoVerif(true);
     setTimeout(() => {
       setCargandoVerif(false);
-      const usuario = usuarioPorTelefono(normalizarDigitos(telefono));
+      const usuario = usuarioPorEmail(email);
       if (!usuario) { setPaso("no_encontrado"); return; }
       setCurrentUserId(usuario.id);
       router.push("/excursiones");
@@ -233,14 +205,14 @@ function LoginMock() {
     <LoginUI
       paso={paso}
       setPaso={setPaso}
-      telefono={telefono}
-      setTelefono={setTelefono}
+      email={email}
+      setEmail={setEmail}
       otp={otp}
       setOtp={setOtp}
       errorMsg={errorMsg}
       cargandoEnvio={cargandoEnvio}
       cargandoVerif={cargandoVerif}
-      onTelefonoSubmit={handleTelefonoSubmit}
+      onEmailSubmit={handleEmailSubmit}
       onOtpSubmit={handleOtpSubmit}
       modoPrivy={false}
     />
@@ -252,25 +224,25 @@ function LoginMock() {
 interface LoginUIProps {
   paso: PasoUI;
   setPaso: (p: PasoUI) => void;
-  telefono: string;
-  setTelefono: (t: string) => void;
+  email: string;
+  setEmail: (t: string) => void;
   otp: string[];
   setOtp: (o: string[]) => void;
   errorMsg: string;
   cargandoEnvio: boolean;
   cargandoVerif: boolean;
-  onTelefonoSubmit: (e: React.FormEvent) => void;
+  onEmailSubmit: (e: React.FormEvent) => void;
   onOtpSubmit: (e: React.FormEvent) => void;
   modoPrivy: boolean;
 }
 
 function LoginUI({
   paso, setPaso,
-  telefono, setTelefono,
+  email, setEmail,
   otp, setOtp,
   errorMsg,
   cargandoEnvio, cargandoVerif,
-  onTelefonoSubmit, onOtpSubmit,
+  onEmailSubmit, onOtpSubmit,
   modoPrivy,
 }: LoginUIProps) {
   const otpValido = otp.join("").length >= (modoPrivy ? 6 : 4);
@@ -279,40 +251,33 @@ function LoginUI({
     <div className="w-full max-w-md">
       <div className="card" style={{ padding: "2rem" }}>
         <div className="mb-8 text-center">
-          <span className="text-5xl" aria-hidden>📱</span>
+          <span className="text-5xl" aria-hidden>✉️</span>
           <h1 className="mt-3 text-2xl font-extrabold">Iniciar sesión</h1>
           <p className="mt-1" style={{ color: "var(--color-ink-soft)" }}>
-            Ingresa con tu número de teléfono celular
+            Ingresa con tu correo electrónico
           </p>
         </div>
 
-        {/* ── Paso: teléfono ── */}
-        {paso === "telefono" && (
-          <form onSubmit={onTelefonoSubmit} className="flex flex-col gap-5">
+        {/* ── Paso: email ── */}
+        {paso === "email" && (
+          <form onSubmit={onEmailSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
-              <label htmlFor="telefono" className="font-semibold">Número de celular</label>
-              <div
-                className="flex items-center gap-2 rounded-xl border-2 bg-white px-4 py-3"
+              <label htmlFor="email" className="font-semibold">Correo electrónico</label>
+              <input
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="tucorreo@ejemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-xl border-2 bg-white px-4 py-3 outline-none text-lg w-full"
                 style={{ borderColor: "var(--color-border)" }}
-              >
-                <span className="text-lg font-bold" style={{ color: "var(--color-ink-soft)" }}>
-                  🇲🇽 +52
-                </span>
-                <input
-                  id="telefono"
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  placeholder="55 1234 5678"
-                  value={telefono}
-                  onChange={(e) => setTelefono(formatearTelefono(e.target.value))}
-                  className="flex-1 bg-transparent outline-none text-lg"
-                  aria-label="Número de celular a 10 dígitos"
-                  required
-                />
-              </div>
+                aria-label="Correo electrónico"
+                required
+              />
               <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
-                Te enviaremos un código de verificación por SMS.
+                Te enviaremos un código de verificación a tu correo.
               </p>
             </div>
 
@@ -323,7 +288,7 @@ function LoginUI({
             <button
               type="submit"
               className="btn-primary w-full"
-              disabled={telefono.replace(/\D/g, "").length < 10 || cargandoEnvio}
+              disabled={!email.includes("@") || cargandoEnvio}
             >
               {cargandoEnvio ? "Enviando código…" : "Enviar código →"}
             </button>
@@ -332,8 +297,9 @@ function LoginUI({
               <div className="info-box text-sm flex gap-2 items-start">
                 <span aria-hidden className="text-lg flex-shrink-0">🔬</span>
                 <span>
-                  <strong>Modo prototipo:</strong> Usa el teléfono de un usuario de demostración:
-                  <br />Elena: <code>55 1234 5678</code> · Raúl: <code>55 2468 1357</code>
+                  <strong>Modo prototipo:</strong> Usa el correo de un usuario de demostración:
+                  <br />Elena: <code>elena@demo.aguila.mx</code>
+                  <br />Raúl: <code>raul@demo.aguila.mx</code>
                 </span>
               </div>
             )}
@@ -341,7 +307,7 @@ function LoginUI({
             {modoPrivy && (
               <div className="info-box text-sm flex gap-2 items-start">
                 <span aria-hidden className="text-lg flex-shrink-0">🔒</span>
-                <span>Recibirás un SMS con tu código de verificación de 6 dígitos.</span>
+                <span>Recibirás un código de verificación en tu bandeja de entrada.</span>
               </div>
             )}
           </form>
@@ -352,7 +318,7 @@ function LoginUI({
           <form onSubmit={onOtpSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-3">
               <p className="text-center" style={{ color: "var(--color-ink-soft)" }}>
-                Código enviado a <strong style={{ color: "var(--color-ink)" }}>+52 {telefono}</strong>
+                Código enviado a <strong style={{ color: "var(--color-ink)" }}>{email}</strong>
               </p>
               <label className="font-semibold">
                 Código de {modoPrivy ? "6" : "4"} dígitos
@@ -388,9 +354,9 @@ function LoginUI({
               type="button"
               className="text-sm text-center underline underline-offset-2"
               style={{ color: "var(--color-ink-soft)" }}
-              onClick={() => { setPaso("telefono"); setOtp(Array(modoPrivy ? 6 : 4).fill("")); }}
+              onClick={() => { setPaso("email"); setOtp(Array(modoPrivy ? 6 : 4).fill("")); }}
             >
-              Cambiar número
+              Cambiar correo
             </button>
           </form>
         )}
@@ -402,11 +368,11 @@ function LoginUI({
             <div>
               <p className="font-bold text-lg">No encontramos una cuenta</p>
               <p className="mt-1" style={{ color: "var(--color-ink-soft)" }}>
-                El número <strong>+52 {telefono}</strong> no está registrado aún.
+                El correo <strong>{email}</strong> no está registrado aún.
               </p>
             </div>
             <Link
-              href={`/registro?telefono=${telefono.replace(/\s/g, "")}`}
+              href={`/registro?email=${encodeURIComponent(email)}`}
               className="btn-primary"
             >
               Crear cuenta nueva →
@@ -415,15 +381,15 @@ function LoginUI({
               type="button"
               className="text-sm underline underline-offset-2"
               style={{ color: "var(--color-ink-soft)" }}
-              onClick={() => { setPaso("telefono"); setOtp(Array(modoPrivy ? 6 : 4).fill("")); }}
+              onClick={() => { setPaso("email"); setOtp(Array(modoPrivy ? 6 : 4).fill("")); }}
             >
-              Intentar con otro número
+              Intentar con otro correo
             </button>
           </div>
         )}
       </div>
 
-      {paso === "telefono" && (
+      {paso === "email" && (
         <p className="mt-6 text-center text-sm" style={{ color: "var(--color-ink-soft)" }}>
           ¿Aún no tienes cuenta?{" "}
           <Link

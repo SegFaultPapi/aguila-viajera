@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { AccesibilidadBadge } from "@/components/AccesibilidadIcon";
 
 /* ── Scroll-reveal hook ─────────────────────────────────── */
 
@@ -26,57 +25,6 @@ function useReveal() {
   }, []);
 }
 
-/* ── Animated counter ───────────────────────────────────── */
-
-function useCounter(target: number, duration = 1800, start = false) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!start) return;
-    const startTime = performance.now();
-    const tick = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [target, duration, start]);
-  return value;
-}
-
-function StatCard({ valor, label, suffix = "", delay = 0 }: { valor: number; label: string; suffix?: string; delay?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [started, setStarted] = useState(false);
-  const count = useCounter(valor, 1600, started);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setStarted(true); io.disconnect(); } },
-      { threshold: 0.5 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className="card text-center reveal"
-      style={{ animationDelay: `${delay}ms`, transitionDelay: `${delay}ms` }}
-    >
-      <p className="font-display text-4xl font-extrabold" style={{ color: "var(--color-accent-dark)" }}>
-        {count.toLocaleString("es-MX")}
-        {suffix}
-      </p>
-      <p className="mt-2 text-base" style={{ color: "var(--color-ink-soft)" }}>
-        {label}
-      </p>
-    </div>
-  );
-}
 
 /* ── Small building blocks ──────────────────────────────── */
 
@@ -94,22 +42,25 @@ function CheckIcon() {
   );
 }
 
-function PlaceholderImage({
-  label = "Imagen",
+function ExcursionImg({
+  src,
+  alt,
   className = "",
   aspect = "aspect-[4/3]",
 }: {
-  label?: string;
+  src: string;
+  alt: string;
   className?: string;
   aspect?: string;
 }) {
   return (
-    <div
-      className={`placeholder-image ${aspect} ${className}`}
-      role="img"
-      aria-label="Espacio reservado para una imagen"
-    >
-      {label}
+    <div className={`${aspect} ${className} overflow-hidden rounded-xl`}>
+      <img
+        src={src}
+        alt={alt}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
     </div>
   );
 }
@@ -123,11 +74,16 @@ function TopBar() {
       style={{ borderColor: "var(--color-border)", background: "var(--color-bg)" }}
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
-        <span className="font-display text-xl font-extrabold tracking-tight" style={{ color: "var(--color-primary)" }}>
-          Águila Viajera
-        </span>
+        <div className="flex items-baseline gap-2">
+          <span className="font-display text-xl font-extrabold tracking-tight" style={{ color: "var(--color-primary)" }}>
+            Águila Viajera
+          </span>
+          <span className="hidden text-sm font-medium sm:inline" style={{ color: "var(--color-ink-soft)" }}>
+            COPACO · Iztapalapa, CDMX
+          </span>
+        </div>
         <div className="flex items-center gap-3">
-          <Link href="/excursiones" className="btn-secondary text-sm px-4 py-2" style={{ minHeight: "40px" }}>
+          <Link href="/login" className="btn-secondary text-sm px-4 py-2" style={{ minHeight: "40px" }}>
             Entrar a la app
           </Link>
         </div>
@@ -154,15 +110,8 @@ function Hero() {
         style={{ width: 320, height: 320, bottom: -80, left: -60, background: "rgba(255,255,255,0.07)" }}
       />
 
-      <div className="relative mx-auto flex max-w-5xl flex-col items-center gap-10 px-5 py-16 sm:flex-row sm:gap-14 sm:py-24">
-        <div className="flex flex-1 flex-col gap-5 text-center sm:text-left">
-          <span
-            className="mx-auto w-fit rounded-full px-4 py-1.5 text-sm font-semibold sm:mx-0 animate-fade-in"
-            style={{ background: "rgba(255,255,255,0.15)" }}
-          >
-            COPACO · Iztapalapa, CDMX
-          </span>
-
+      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 px-5 py-16 sm:flex-row sm:gap-12 sm:py-24">
+        <div className="flex flex-col gap-5 text-center sm:text-left sm:w-[35%] sm:flex-shrink-0">
           <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl animate-fade-up delay-100">
             Excursiones seguras para adultos mayores
           </h1>
@@ -185,7 +134,12 @@ function Hero() {
         </div>
 
         <div className="w-full flex-1 animate-float">
-          <PlaceholderImage label="Imagen de una excursión" aspect="aspect-[4/3]" className="max-w-sm mx-auto" />
+          <ExcursionImg
+            src="/images/ui/hero.jpg"
+            alt="Grupo de adultos mayores abordando un autobús en una excursión comunitaria"
+            aspect="aspect-[4/3]"
+            className="w-full shadow-2xl"
+          />
         </div>
       </div>
 
@@ -202,10 +156,10 @@ function Hero() {
 /* ── Rotating image + description ───────────────────────── */
 
 const MOMENTOS = [
-  { titulo: "Salida puntual", detalle: "Cada excursión inicia con la lista de asistencia confirmada." },
-  { titulo: "Rutas revisadas", detalle: "Verificamos la accesibilidad del camino antes de salir." },
-  { titulo: "Acompañamiento", detalle: "Coordinadores atentos a las necesidades de cada persona." },
-  { titulo: "Regreso seguro", detalle: "Cerramos cada excursión con el grupo completo." },
+  { titulo: "Salida puntual", detalle: "Cada excursión inicia con la lista de asistencia confirmada.", imagen: "/images/ui/momento-1.jpg" },
+  { titulo: "Rutas revisadas", detalle: "Verificamos la accesibilidad del camino antes de salir.", imagen: "/images/ui/momento-2.jpg" },
+  { titulo: "Acompañamiento", detalle: "Coordinadores atentos a las necesidades de cada persona.", imagen: "/images/ui/momento-3.jpg" },
+  { titulo: "Regreso seguro", detalle: "Cerramos cada excursión con el grupo completo.", imagen: "/images/ui/momento-4.jpg" },
 ];
 
 function MomentosCarousel() {
@@ -229,12 +183,21 @@ function MomentosCarousel() {
         </p>
 
         <div className="reveal flex flex-col items-center gap-8 sm:flex-row">
-          <PlaceholderImage
-            key={activo}
-            label={`Imagen ${activo + 1} de ${MOMENTOS.length}`}
-            aspect="aspect-[4/3]"
-            className="max-w-sm animate-fade-in"
-          />
+          <div className="relative max-w-sm w-full">
+            <ExcursionImg
+              key={activo}
+              src={momento.imagen}
+              alt={momento.titulo}
+              aspect="aspect-[4/3]"
+              className="w-full animate-fade-in shadow-lg"
+            />
+            <img
+              src="/images/ui/aguila-foto.png"
+              alt="Águila Viajera fotografiando el momento"
+              className="pointer-events-none select-none absolute -bottom-6 -right-6 w-32 sm:w-40"
+              style={{ zIndex: 10, filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.45))" }}
+            />
+          </div>
           <div key={`text-${activo}`} className="flex-1 animate-fade-in">
             <h3 className="text-3xl font-extrabold">{momento.titulo}</h3>
             <p className="mt-3 text-xl" style={{ color: "var(--color-ink-soft)" }}>
@@ -311,14 +274,24 @@ function DestinosCards({
             <Link
               key={ex.id}
               href={`/excursiones/${ex.id}`}
-              className="reveal card card-interactive flex flex-col gap-3"
+              className="reveal card card-interactive flex flex-col gap-0 overflow-hidden !p-0"
               style={{ transitionDelay: `${i * 80}ms` }}
             >
-              <PlaceholderImage label={ex.destino} aspect="aspect-[4/3]" />
-              <h3 className="text-xl font-extrabold">{ex.destino}</h3>
-              <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
-                {ex.descripcionLarga}
-              </p>
+              <ExcursionImg
+                src={`/images/excursiones/${ex.id}.jpg`}
+                alt={ex.destino}
+                aspect="aspect-[3/2]"
+                className="rounded-none rounded-t-xl"
+              />
+              <div className="flex flex-col gap-1.5 p-4">
+                <h3 className="text-lg font-extrabold leading-snug">{ex.destino}</h3>
+                <p
+                  className="text-sm line-clamp-2"
+                  style={{ color: "var(--color-ink-soft)" }}
+                >
+                  {ex.descripcionLarga}
+                </p>
+              </div>
             </Link>
           ))}
           {excursiones.length === 0 && (
@@ -378,8 +351,19 @@ function CoordinadorCTA() {
       style={{ background: "linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))" }}
     >
       <div className="mx-auto max-w-5xl flex flex-col items-center gap-10 sm:flex-row">
-        <div className="reveal-left w-full flex-1">
-          <PlaceholderImage label="Imagen del panel de coordinador" aspect="aspect-[4/3]" />
+        <div className="reveal-left w-full flex-1 relative">
+          <ExcursionImg
+            src="/images/ui/coordinador.jpg"
+            alt="Coordinadora COPACO gestionando excursiones desde su tablet"
+            aspect="aspect-[4/3]"
+            className="shadow-xl"
+          />
+          <img
+            src="/images/ui/aguila-mapa.png"
+            alt="Águila Viajera revisando el mapa de la excursión"
+            className="pointer-events-none select-none absolute -bottom-8 -left-8 w-48 sm:w-56"
+            style={{ zIndex: 10, filter: "drop-shadow(0 8px 28px rgba(0,0,0,0.5))" }}
+          />
         </div>
 
         <div className="reveal-right flex-1 text-white flex flex-col gap-4">

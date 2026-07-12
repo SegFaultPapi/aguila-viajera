@@ -6,6 +6,7 @@ export const USUARIOS: Usuario[] = [
     nombre: "Elena Martínez",
     rol: "adulto_mayor",
     telefono: "55 1234 5678",
+    email: "elena@demo.aguila.mx",
     colonia: "San Miguel Teotongo",
     familiaresVinculados: ["u-ana"],
   },
@@ -14,6 +15,7 @@ export const USUARIOS: Usuario[] = [
     nombre: "Ana Martínez",
     rol: "familiar",
     telefono: "55 8765 4321",
+    email: "ana@demo.aguila.mx",
     colonia: "San Miguel Teotongo",
     cuidaA: "u-elena",
   },
@@ -22,6 +24,7 @@ export const USUARIOS: Usuario[] = [
     nombre: "Raúl Gómez",
     rol: "coordinador",
     telefono: "55 2468 1357",
+    email: "raul@demo.aguila.mx",
     colonia: "San Miguel Teotongo",
   },
   {
@@ -29,6 +32,7 @@ export const USUARIOS: Usuario[] = [
     nombre: "Carmen Reyes",
     rol: "adulto_mayor",
     telefono: "55 3691 2580",
+    email: "carmen@demo.aguila.mx",
     colonia: "Santa Cruz Meyehualco",
   },
 ];

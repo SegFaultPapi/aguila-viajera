@@ -3,9 +3,29 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { PlaceholderImage } from "@/components/PlaceholderImage";
+import { BackButton } from "@/components/BackButton";
 
-const PASOS = ["Datos básicos", "Logística y transporte", "Accesibilidad y salud", "Revisión y publicar"];
+const PASOS = ["Datos básicos", "Logística", "Accesibilidad", "Revisión"];
 const EMOJIS = ["🏛️", "🌳", "⛪", "🏖️", "🎡", "🏞️", "🎭", "🛍️"];
+
+function Campo({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="font-semibold text-sm">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+const inputClase = "rounded-xl border-2 bg-white px-4 py-3 outline-none w-full";
+const inputEstilo = { borderColor: "var(--color-border)", minHeight: "52px" };
 
 export default function NuevaExcursionPage() {
   const router = useRouter();
@@ -68,9 +88,12 @@ export default function NuevaExcursionPage() {
 
   if (currentUser.rol !== "coordinador") {
     return (
-      <div className="alert-box">
-        Esta pantalla es solo para coordinadores COPACO. Cambia de usuario en la parte superior a
-        &quot;Raúl Gómez (coordinador)&quot; para probar este flujo.
+      <div className="flex flex-col gap-4">
+        <BackButton href="/excursiones" />
+        <div className="alert-box">
+          Esta pantalla es solo para coordinadores COPACO. Abre la pestaña &quot;Yo&quot; en la
+          barra inferior y cambia a &quot;Raúl Gómez (coordinador)&quot; para probar este flujo.
+        </div>
       </div>
     );
   }
@@ -78,7 +101,7 @@ export default function NuevaExcursionPage() {
   if (publicado && excursionCreadaId) {
     return (
       <div className="success-box flex flex-col gap-4">
-        <h1 className="text-2xl font-extrabold">✅ Excursión publicada</h1>
+        <h1 className="text-2xl font-extrabold">Excursión publicada</h1>
         <p className="font-normal">
           &quot;{destino}&quot; quedó registrada con tu autoría (coordinador: {currentUser.nombre}) y
           fecha/hora del servidor — este registro no puede ser editado ni borrado por nadie fuera
@@ -100,7 +123,9 @@ export default function NuevaExcursionPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 pb-10">
+      <BackButton href="/excursiones" />
+
       <div>
         <h1 className="text-3xl font-extrabold">Nueva excursión</h1>
         <p className="mt-1" style={{ color: "var(--color-ink-soft)" }}>
@@ -108,6 +133,7 @@ export default function NuevaExcursionPage() {
         </p>
       </div>
 
+      {/* Stepper */}
       <div className="flex items-center gap-1">
         {PASOS.map((p, i) => (
           <div key={p} className="flex flex-1 items-center gap-1">
@@ -116,7 +142,7 @@ export default function NuevaExcursionPage() {
               style={{
                 background: i <= paso ? "var(--color-primary)" : "var(--color-bg-alt)",
                 color: i <= paso ? "white" : "var(--color-ink-soft)",
-                border: i <= paso ? "none" : `1px solid var(--color-border)`,
+                border: i <= paso ? "none" : "1px solid var(--color-border)",
               }}
             >
               {i < paso ? "✓" : i + 1}
@@ -133,169 +159,179 @@ export default function NuevaExcursionPage() {
 
       {paso === 0 && (
         <div className="card flex flex-col gap-4">
-          <label className="flex flex-col gap-1">
-            Destino
+          <Campo label="Foto de portada">
+            <PlaceholderImage label="Foto de la excursión" aspect="aspect-[16/9]" />
+          </Campo>
+
+          <Campo label="Destino">
             <input
               type="text"
               required
               value={destino}
               onChange={(e) => setDestino(e.target.value)}
-              className="rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--color-border)" }}
+              className={inputClase}
+              style={inputEstilo}
               placeholder="Ej. Museo Nacional de Antropología"
             />
-          </label>
-          <label className="flex flex-col gap-1">
-            Fecha
+          </Campo>
+
+          <Campo label="Fecha">
             <input
               type="date"
               required
               value={fecha}
               onChange={(e) => setFecha(e.target.value)}
-              className="rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--color-border)" }}
+              className={inputClase}
+              style={inputEstilo}
             />
-          </label>
-          <div className="flex flex-col gap-1">
-            Ícono de la excursión
+          </Campo>
+
+          <Campo label="Ícono de la excursión">
             <div className="flex flex-wrap gap-2">
               {EMOJIS.map((e) => (
                 <button
                   type="button"
                   key={e}
                   onClick={() => setImagenEmoji(e)}
-                  className="rounded-lg border px-3 py-2 text-2xl"
+                  className="rounded-xl border-2 text-2xl flex items-center justify-center"
                   style={{
                     borderColor: imagenEmoji === e ? "var(--color-primary)" : "var(--color-border)",
                     background: imagenEmoji === e ? "var(--color-primary-soft)" : "white",
+                    width: "52px",
+                    height: "52px",
                   }}
                   aria-label={`Elegir ícono ${e}`}
+                  aria-pressed={imagenEmoji === e}
                 >
                   {e}
                 </button>
               ))}
             </div>
-          </div>
+          </Campo>
         </div>
       )}
 
       {paso === 1 && (
         <div className="card flex flex-col gap-4">
-          <label className="flex flex-col gap-1">
-            Punto y hora de salida
+          <Campo label="Punto de salida">
             <input
               type="text"
               required
               value={puntoSalida}
               onChange={(e) => setPuntoSalida(e.target.value)}
-              className="rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--color-border)" }}
+              className={inputClase}
+              style={inputEstilo}
               placeholder="Ej. Explanada COPACO"
             />
-          </label>
+          </Campo>
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1">
-              Hora de salida
+            <Campo label="Hora de salida">
               <input
                 type="time"
                 value={horaSalida}
                 onChange={(e) => setHoraSalida(e.target.value)}
-                className="rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--color-border)" }}
+                className={inputClase}
+                style={inputEstilo}
               />
-            </label>
-            <label className="flex flex-1 flex-col gap-1">
-              Hora de regreso
+            </Campo>
+            <Campo label="Hora de regreso">
               <input
                 type="time"
                 value={horaRegreso}
                 onChange={(e) => setHoraRegreso(e.target.value)}
-                className="rounded-lg border px-3 py-2"
-                style={{ borderColor: "var(--color-border)" }}
+                className={inputClase}
+                style={inputEstilo}
               />
-            </label>
+            </Campo>
           </div>
-          <label className="flex flex-col gap-1">
-            Cupo máximo
+          <Campo label="Cupo máximo">
             <input
               type="number"
               min={1}
               required
+              inputMode="numeric"
               value={cupoMaximo}
               onChange={(e) => setCupoMaximo(Number(e.target.value))}
-              className="rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--color-border)" }}
+              className={inputClase}
+              style={inputEstilo}
             />
-          </label>
-          <label className="flex flex-col gap-1">
-            Costo (MXN, 0 = gratuito)
+          </Campo>
+          <Campo label="Costo (MXN, 0 = gratuito)">
             <input
               type="number"
               min={0}
+              inputMode="numeric"
               value={costo}
               onChange={(e) => setCosto(Number(e.target.value))}
-              className="rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--color-border)" }}
+              className={inputClase}
+              style={inputEstilo}
             />
-          </label>
-          <label className="flex flex-col gap-1">
-            Medio de transporte
+          </Campo>
+          <Campo label="Medio de transporte">
             <input
               type="text"
               value={transporte}
               onChange={(e) => setTransporte(e.target.value)}
-              className="rounded-lg border px-3 py-2"
-              style={{ borderColor: "var(--color-border)" }}
+              className={inputClase}
+              style={inputEstilo}
             />
-          </label>
+          </Campo>
         </div>
       )}
 
       {paso === 2 && (
-        <div className="card flex flex-col gap-4">
-          <p className="text-lg font-bold">Accesibilidad de la ruta</p>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={tieneEscaleras} onChange={(e) => setTieneEscaleras(e.target.checked)} className="h-5 w-5" />
-            La ruta tiene escaleras
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={tienePuentesSinRampa} onChange={(e) => setTienePuentesSinRampa(e.target.checked)} className="h-5 w-5" />
-            Hay puentes peatonales sin rampa
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={terrenoIrregular} onChange={(e) => setTerrenoIrregular(e.target.checked)} className="h-5 w-5" />
-            Terreno irregular en el recorrido
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={requiereAcompanante} onChange={(e) => setRequiereAcompanante(e.target.checked)} className="h-5 w-5" />
-            Requiere acompañante obligatorio para movilidad reducida
-          </label>
-          <label className="flex flex-col gap-1">
-            Qué debe llevar el participante (separado por comas)
+        <div className="card flex flex-col gap-3">
+          <p className="text-lg font-bold mb-1">Accesibilidad de la ruta</p>
+          {[
+            ["La ruta tiene escaleras", tieneEscaleras, setTieneEscaleras],
+            ["Hay puentes peatonales sin rampa", tienePuentesSinRampa, setTienePuentesSinRampa],
+            ["Terreno irregular en el recorrido", terrenoIrregular, setTerrenoIrregular],
+            ["Requiere acompañante obligatorio", requiereAcompanante, setRequiereAcompanante],
+          ].map(([texto, valor, setValor]) => (
+            <label
+              key={texto as string}
+              className="flex items-center gap-3 rounded-xl border-2 px-4 py-3 cursor-pointer transition-colors"
+              style={{
+                borderColor: valor ? "var(--color-primary)" : "var(--color-border)",
+                background: valor ? "var(--color-primary-soft)" : "transparent",
+                minHeight: "52px",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={valor as boolean}
+                onChange={(e) => (setValor as (v: boolean) => void)(e.target.checked)}
+                className="h-5 w-5 flex-shrink-0"
+              />
+              <span className="font-semibold">{texto as string}</span>
+            </label>
+          ))}
+          <Campo label="Qué debe llevar el participante (separado por comas)">
             <textarea
               value={queLlevarTexto}
               onChange={(e) => setQueLlevarTexto(e.target.value)}
-              className="rounded-lg border px-3 py-2"
+              className={inputClase}
               style={{ borderColor: "var(--color-border)" }}
               rows={2}
             />
-          </label>
+          </Campo>
         </div>
       )}
 
       {paso === 3 && (
         <div className="card flex flex-col gap-3">
           <p className="text-lg font-bold">Revisión antes de publicar</p>
+          <PlaceholderImage label="Foto de la excursión" aspect="aspect-[16/9]" />
           <div className="flex items-center gap-3">
             <span
-              className="flex h-12 w-12 items-center justify-center rounded-lg text-2xl"
+              className="flex h-12 w-12 items-center justify-center rounded-lg text-2xl flex-shrink-0"
               style={{ background: "var(--color-primary-soft)" }}
               aria-hidden
             >
               {imagenEmoji}
             </span>
-            <div>
-              <p className="font-bold">{destino || "(sin destino)"}</p>
+            <div className="min-w-0">
+              <p className="font-bold truncate">{destino || "(sin destino)"}</p>
               <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
                 {fecha || "(sin fecha)"}
               </p>
@@ -318,20 +354,20 @@ export default function NuevaExcursionPage() {
         </div>
       )}
 
-      <div className="flex justify-between">
+      <div className="flex justify-between gap-3">
         <button className="btn-secondary" onClick={anterior} disabled={paso === 0}>
           ← Atrás
         </button>
         {paso < PASOS.length - 1 ? (
           <button
-            className="btn-primary"
+            className="btn-primary flex-1"
             onClick={siguiente}
             disabled={(paso === 0 && !pasoBasicoValido) || (paso === 1 && !pasoLogisticaValido)}
           >
             Siguiente →
           </button>
         ) : (
-          <button className="btn-primary" onClick={publicar}>
+          <button className="btn-primary flex-1" onClick={publicar}>
             Publicar excursión
           </button>
         )}

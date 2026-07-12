@@ -169,13 +169,13 @@ interface DatosForm {
 
 /* ── Core del wizard (compartido Privy / Mock) ──────────── */
 
-function useWizard(initialTelefono: string) {
+function useWizard(initialTelefono: string, initialEmail = "") {
   const [paso, setPaso] = useState(1);
   const [rolSeleccionado, setRolSeleccionado] = useState<Rol | null>(null);
   const [datos, setDatos] = useState<DatosForm>({
     nombre: "",
     telefono: initialTelefono,
-    email: "",
+    email: initialEmail,
     colonia: "",
     telefonoFamiliar: "",
     comision: "",
@@ -189,38 +189,34 @@ function useWizard(initialTelefono: string) {
 
 /* ── Wizard con Privy ───────────────────────────────────── */
 
-function RegistroConPrivy({ initialTelefono }: { initialTelefono: string }) {
+function RegistroConPrivy({ initialTelefono, initialEmail }: { initialTelefono: string; initialEmail: string }) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useLoginWithSms } = require("@privy-io/react-auth");
+  const { useLoginWithEmail } = require("@privy-io/react-auth");
   const router = useRouter();
-  const { usuarioPorTelefono, registrarUsuario, vincularFamiliar, setCurrentUserId } = useStore();
+  const { usuarioPorEmail, usuarioPorTelefono, registrarUsuario, vincularFamiliar, setCurrentUserId } = useStore();
 
-  const wiz = useWizard(initialTelefono);
+  const wiz = useWizard(initialTelefono, initialEmail);
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [otpError, setOtpError] = useState("");
   const [cargandoEnvio, setCargandoEnvio] = useState(false);
   const [cargandoVerif, setCargandoVerif] = useState(false);
   const [exito, setExito] = useState(false);
 
-  // Refs para que onComplete tenga valores actuales
   const datosRef = useRef(wiz.datos);
   datosRef.current = wiz.datos;
   const rolRef = useRef(wiz.rolSeleccionado);
   rolRef.current = wiz.rolSeleccionado;
 
   const onComplete = useCallback(
-    ({ user }: { user: { phone?: { number: string } } }) => {
+    ({ user }: { user: { email?: { address: string } } }) => {
       const datos = datosRef.current;
       const rol = rolRef.current;
       if (!rol) return;
 
-      const phoneE164 = user?.phone?.number ?? aE164(datos.telefono);
-      const normPhone = normalizarDigitos(phoneE164);
+      const emailVerificado = user?.email?.address ?? datos.email;
 
-      // Verificar que no exista ya
-      const existente = usuarioPorTelefono(normPhone);
+      const existente = usuarioPorEmail(emailVerificado);
       if (existente) {
-        // Ya existe: redirigir al login
         router.push("/login?ya_registrado=1");
         return;
       }
@@ -228,9 +224,9 @@ function RegistroConPrivy({ initialTelefono }: { initialTelefono: string }) {
       const nuevo = registrarUsuario({
         nombre: datos.nombre.trim(),
         rol,
-        telefono: normPhone.replace(/(\d{2})(\d{4})(\d{4})/, "$1 $2 $3"),
+        telefono: datos.telefono,
         colonia: datos.colonia,
-        email: datos.email.trim() || undefined,
+        email: emailVerificado,
       });
 
       if (rol === "familiar" && datos.telefonoFamiliar) {
@@ -241,7 +237,7 @@ function RegistroConPrivy({ initialTelefono }: { initialTelefono: string }) {
       setCurrentUserId(nuevo.id);
       setExito(true);
     },
-    [registrarUsuario, vincularFamiliar, setCurrentUserId, usuarioPorTelefono, router]
+    [registrarUsuario, vincularFamiliar, setCurrentUserId, usuarioPorEmail, usuarioPorTelefono, router]
   );
 
   const onError = useCallback((error: { message?: string }) => {
@@ -249,16 +245,21 @@ function RegistroConPrivy({ initialTelefono }: { initialTelefono: string }) {
     setCargandoVerif(false);
   }, []);
 
-  const { sendCode, loginWithCode } = useLoginWithSms({ onComplete, onError });
+  const { sendCode, loginWithCode } = useLoginWithEmail({ onComplete, onError });
 
   async function handleEnviarOtp() {
     wiz.setErrorForm("");
+    const emailValue = wiz.datos.email.trim();
+    if (!emailValue.includes("@")) {
+      wiz.setErrorForm("Ingresa un correo electrónico válido para verificar tu cuenta.");
+      return;
+    }
     setCargandoEnvio(true);
     try {
-      await sendCode({ phoneNumber: aE164(wiz.datos.telefono) });
+      await sendCode({ email: emailValue });
       wiz.setPaso(wiz.paso + 1);
     } catch {
-      wiz.setErrorForm("No se pudo enviar el código. Verifica el número e intenta de nuevo.");
+      wiz.setErrorForm("No se pudo enviar el código. Verifica el correo e intenta de nuevo.");
     } finally {
       setCargandoEnvio(false);
     }
@@ -293,11 +294,11 @@ function RegistroConPrivy({ initialTelefono }: { initialTelefono: string }) {
 
 /* ── Wizard modo prototipo ──────────────────────────────── */
 
-function RegistroMock({ initialTelefono }: { initialTelefono: string }) {
+function RegistroMock({ initialTelefono, initialEmail }: { initialTelefono: string; initialEmail: string }) {
   const router = useRouter();
   const { usuarioPorTelefono, registrarUsuario, vincularFamiliar, setCurrentUserId } = useStore();
 
-  const wiz = useWizard(initialTelefono);
+  const wiz = useWizard(initialTelefono, initialEmail);
   const [otp, setOtp] = useState(Array(4).fill(""));
   const [otpError] = useState("");
   const [cargandoEnvio, setCargandoEnvio] = useState(false);
@@ -632,7 +633,7 @@ function WizardUI({
           </>
         )}
 
-        {/* ── Paso OTP: verificación de teléfono ── */}
+        {/* ── Paso OTP: verificación de correo ── */}
         {((paso === 3 && rolSeleccionado === "adulto_mayor") ||
           (paso === 4 && (rolSeleccionado === "familiar" || rolSeleccionado === "coordinador"))) && (
           <>
@@ -640,28 +641,35 @@ function WizardUI({
             <button type="button" onClick={() => setPaso(paso - 1)} className="text-sm mb-4 flex items-center gap-1" style={{ color: "var(--color-ink-soft)" }}>
               ← Regresar
             </button>
-            <h2 className="text-xl font-extrabold mb-1">Verifica tu teléfono</h2>
+            <h2 className="text-xl font-extrabold mb-1">Verifica tu correo</h2>
             <p className="text-sm mb-6" style={{ color: "var(--color-ink-soft)" }}>
               {modoPrivy
-                ? "Te enviaremos un código SMS para confirmar tu número."
-                : "Confirma tu número de teléfono antes de crear la cuenta."}
+                ? "Te enviaremos un código a tu correo para confirmar tu cuenta."
+                : "Confirma tu correo antes de crear la cuenta."}
             </p>
 
             {/* Resumen antes del OTP */}
             <div className="rounded-2xl p-4 mb-5 flex flex-col gap-1 text-sm" style={{ background: "var(--color-bg-alt)" }}>
               <p><strong>Nombre:</strong> {datos.nombre}</p>
+              {datos.email && <p><strong>Correo:</strong> {datos.email}</p>}
               <p><strong>Teléfono:</strong> +52 {datos.telefono}</p>
               <p><strong>Colonia:</strong> {datos.colonia}</p>
             </div>
+
+            {modoPrivy && !datos.email.includes("@") && (
+              <div className="alert-box text-sm mb-4">
+                Necesitas ingresar un correo electrónico válido en el paso anterior para verificar tu cuenta.
+              </div>
+            )}
 
             <div className="flex flex-col gap-4">
               <button
                 type="button"
                 onClick={onEnviarOtp}
                 className="btn-secondary w-full"
-                disabled={cargandoEnvio}
+                disabled={cargandoEnvio || (modoPrivy && !datos.email.includes("@"))}
               >
-                {cargandoEnvio ? "Enviando código…" : `Enviar código a +52 ${datos.telefono}`}
+                {cargandoEnvio ? "Enviando código…" : datos.email ? `Enviar código a ${datos.email}` : "Enviar código de verificación"}
               </button>
 
               {cargandoEnvio === false && otp.some((d) => d !== "") && (
@@ -678,7 +686,7 @@ function WizardUI({
                     )}
                     {!modoPrivy && (
                       <p className="text-center text-sm" style={{ color: "var(--color-ink-soft)" }}>
-                        Modo prototipo — cualquier código de {modoPrivy ? "6" : "4"} dígitos funciona.
+                        Modo prototipo — cualquier código de 4 dígitos funciona.
                       </p>
                     )}
                   </div>
@@ -737,11 +745,12 @@ function RegistroInner() {
   const initialTelefono = searchParams.get("telefono")
     ? formatearTelefono(searchParams.get("telefono")!)
     : "";
+  const initialEmail = searchParams.get("email") ?? "";
 
   return PRIVY_ACTIVO ? (
-    <RegistroConPrivy initialTelefono={initialTelefono} />
+    <RegistroConPrivy initialTelefono={initialTelefono} initialEmail={initialEmail} />
   ) : (
-    <RegistroMock initialTelefono={initialTelefono} />
+    <RegistroMock initialTelefono={initialTelefono} initialEmail={initialEmail} />
   );
 }
 

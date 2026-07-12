@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { AccesibilidadBadge } from "@/components/AccesibilidadIcon";
+import { BackButton } from "@/components/BackButton";
 
 /* ── Helpers ────────────────────────────────────────────── */
 
@@ -31,10 +32,10 @@ function InfoFila({ icono, label, valor }: { icono: string; label: string; valor
     <div className="flex items-start gap-3 py-3 border-b last:border-b-0" style={{ borderColor: "var(--color-border)" }}>
       <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden>{icono}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-ink-soft)" }}>
+        <p className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--color-ink-soft)" }}>
           {label}
         </p>
-        <p className="font-semibold mt-0.5">{valor}</p>
+        <p className="text-base font-semibold mt-0.5">{valor}</p>
       </div>
     </div>
   );
@@ -44,7 +45,6 @@ function InfoFila({ icono, label, valor }: { icono: string; label: string; valor
 
 export default function DetalleExcursion() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const {
     excursiones, usuarios, currentUser,
     perfilDe, inscripcionVigente, inscribir,
@@ -66,7 +66,7 @@ export default function DetalleExcursion() {
   if (!excursion) {
     return (
       <div className="flex flex-col gap-4">
-        <BackButton />
+        <BackButton href="/excursiones" />
         <div className="card text-center py-12" style={{ color: "var(--color-ink-soft)" }}>
           <span className="text-4xl" aria-hidden>🔍</span>
           <p className="mt-3 font-semibold">Excursión no encontrada.</p>
@@ -106,16 +106,25 @@ export default function DetalleExcursion() {
     <div className="flex flex-col gap-4 pb-28">
       {/* Navegación */}
       <div className="flex items-center justify-between">
-        <BackButton />
+        <BackButton href="/excursiones" />
         {currentUser.rol === "coordinador" && currentUser.id === excursion.coordinadorId && (
           <Link
             href={`/coordinador/excursiones/${excursion.id}/participantes`}
-            className="text-sm font-bold"
+            className="text-base font-bold"
             style={{ color: "var(--color-primary)" }}
           >
             Panel de participantes →
           </Link>
         )}
+      </div>
+
+      {/* Foto de portada */}
+      <div className="aspect-[16/9] overflow-hidden rounded-2xl">
+        <img
+          src={`/images/excursiones/${excursion.id}.jpg`}
+          alt={excursion.destino}
+          className="h-full w-full object-cover"
+        />
       </div>
 
       {/* Hero */}
@@ -131,8 +140,8 @@ export default function DetalleExcursion() {
           {excursion.imagenEmoji}
         </span>
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold leading-tight">{excursion.destino}</h1>
-          <p className="mt-1 text-sm font-semibold" style={{ color: "var(--color-primary)" }}>
+          <h1 className="text-3xl font-extrabold leading-tight">{excursion.destino}</h1>
+          <p className="mt-1 text-base font-semibold" style={{ color: "var(--color-primary)" }}>
             {formatFecha(excursion.fecha)}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -163,14 +172,14 @@ export default function DetalleExcursion() {
             }}
           />
         </div>
-        <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+        <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
           {confirmadas} de {excursion.cupoMaximo} inscritos confirmados
         </p>
       </div>
 
       {/* Logística */}
       <div className="card">
-        <h2 className="font-extrabold text-lg mb-1">Logística</h2>
+        <h2 className="font-extrabold text-xl mb-1">Logística</h2>
         <InfoFila icono="📅" label="Fecha" valor={formatFecha(excursion.fecha)} />
         <InfoFila icono="🕗" label="Horario" valor={`Salida ${excursion.horaSalida}h · Regreso ${excursion.horaRegreso}h`} />
         <InfoFila icono="📍" label="Punto de salida" valor={excursion.puntoSalida} />
@@ -181,7 +190,7 @@ export default function DetalleExcursion() {
 
       {/* Qué llevar */}
       <div className="card">
-        <h2 className="font-extrabold text-lg mb-3">Qué necesitas llevar</h2>
+        <h2 className="font-extrabold text-xl mb-3">Qué necesitas llevar</h2>
         <ul className="flex flex-col gap-2">
           {excursion.queLlevar.map((item) => (
             <li key={item} className="flex items-center gap-2.5">
@@ -200,7 +209,7 @@ export default function DetalleExcursion() {
 
       {/* Accesibilidad */}
       <div className="card">
-        <h2 className="font-extrabold text-lg mb-3">Accesibilidad de la ruta</h2>
+        <h2 className="font-extrabold text-xl mb-3">Accesibilidad de la ruta</h2>
         <div className="flex flex-col gap-2">
           {[
             { cond: excursion.accesibilidad.tieneEscaleras, texto: "Tiene escaleras", riesgo: true },
@@ -218,13 +227,13 @@ export default function DetalleExcursion() {
                 <span className="text-lg flex-shrink-0" aria-hidden>
                   {r.riesgo ? "⚠️" : "✅"}
                 </span>
-                <span className="text-sm">{r.texto}</span>
+                <span className="text-base">{r.texto}</span>
               </div>
             ))}
         </div>
         {excursion.requiereAcompanante && (
           <div
-            className="mt-3 rounded-xl px-3 py-2 text-sm font-semibold flex items-center gap-2"
+            className="mt-3 rounded-xl px-3 py-2 text-base font-semibold flex items-center gap-2"
             style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}
           >
             👥 Esta excursión requiere ir con acompañante
@@ -238,7 +247,7 @@ export default function DetalleExcursion() {
           <span className="text-2xl flex-shrink-0">⚠️</span>
           <div>
             <p className="font-bold">Revisa antes de inscribirte</p>
-            <p className="text-sm mt-0.5">
+            <p className="text-base mt-0.5">
               {movilidadRiesgo
                 ? `Tu perfil indica que ${movilidadLabel(perfil!.movilidad)} — esta ruta tiene obstáculos que pueden dificultar el traslado.`
                 : "Esta excursión requiere que vayas acompañado(a)."}
@@ -276,7 +285,7 @@ export default function DetalleExcursion() {
                   : `${usuarioObjetivo.nombre} está en lista de espera`}
               </p>
               {confirmando && (
-                <p className="text-sm mt-0.5">
+                <p className="text-base mt-0.5">
                   Confirmación enviada (simulada) a {usuarioObjetivo.nombre}
                   {currentUser.rol === "familiar" ? ` y a ${currentUser.nombre}` : ""}.
                 </p>
@@ -286,7 +295,7 @@ export default function DetalleExcursion() {
 
           {!cancelando ? (
             <button
-              className="btn-secondary w-fit text-sm"
+              className="btn-secondary w-fit"
               onClick={() => setCancelando(true)}
             >
               Cancelar inscripción
@@ -301,13 +310,13 @@ export default function DetalleExcursion() {
               </p>
               <div className="flex gap-2">
                 <button
-                  className="btn-primary text-sm"
-                  style={{ background: "var(--color-alert)", minHeight: "44px" }}
+                  className="btn-primary"
+                  style={{ background: "var(--color-alert)", minHeight: "52px" }}
                   onClick={handleCancelar}
                 >
                   Sí, cancelar
                 </button>
-                <button className="btn-secondary text-sm" onClick={() => setCancelando(false)}>
+                <button className="btn-secondary" onClick={() => setCancelando(false)}>
                   No, mantener
                 </button>
               </div>
@@ -334,24 +343,5 @@ export default function DetalleExcursion() {
         </div>
       )}
     </div>
-  );
-}
-
-/* ── Botón de regreso ───────────────────────────────────── */
-
-function BackButton() {
-  const router = useRouter();
-  return (
-    <button
-      onClick={() => router.push("/excursiones")}
-      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors"
-      style={{
-        background: "var(--color-bg-alt)",
-        color: "var(--color-ink-soft)",
-        minHeight: "36px",
-      }}
-    >
-      ← Volver
-    </button>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { Movilidad } from "@/lib/types";
+import { BackButton } from "@/components/BackButton";
 
 const MOVILIDAD_ICONO: Record<Movilidad, string> = {
   independiente: "🚶",
@@ -15,20 +16,32 @@ const MOVILIDAD_ICONO: Record<Movilidad, string> = {
 
 export default function PanelParticipantesPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const { excursiones, currentUser, inscripcionesDe, usuarioById, perfilDe, marcarAsistencia } =
     useStore();
   const [expandido, setExpandido] = useState<string | null>(null);
 
   const excursion = excursiones.find((e) => e.id === id);
 
-  if (!excursion) return <p>Excursión no encontrada.</p>;
+  if (!excursion) {
+    return (
+      <div className="flex flex-col gap-4">
+        <BackButton href="/excursiones" />
+        <div className="card text-center py-12" style={{ color: "var(--color-ink-soft)" }}>
+          Excursión no encontrada.
+        </div>
+      </div>
+    );
+  }
 
   if (currentUser.rol !== "coordinador" || currentUser.id !== excursion.coordinadorId) {
     return (
-      <div className="alert-box">
-        Solo el coordinador de esta excursión puede ver el panel de participantes. Cambia a
-        &quot;Raúl Gómez (coordinador)&quot; arriba para probar este flujo.
+      <div className="flex flex-col gap-4">
+        <BackButton href="/excursiones" />
+        <div className="alert-box">
+          Solo el coordinador de esta excursión puede ver el panel de participantes. Abre la
+          pestaña &quot;Yo&quot; en la barra inferior y cambia a &quot;Raúl Gómez (coordinador)&quot;
+          para probar este flujo.
+        </div>
       </div>
     );
   }
@@ -40,19 +53,25 @@ export default function PanelParticipantesPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-10">
-      <button
-        onClick={() => router.push("/excursiones")}
-        className="w-fit text-sm font-semibold underline"
-        style={{ color: "var(--color-primary)" }}
-      >
-        ← Volver al listado
-      </button>
+      <BackButton href={`/excursiones/${excursion.id}`} label="Volver a la excursión" />
 
       <div>
-        <h1 className="text-3xl font-extrabold">
-          <span aria-hidden>{excursion.imagenEmoji}</span> Participantes — {excursion.destino}
-        </h1>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <span
+            className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
+            style={{ background: "var(--color-primary-soft)" }}
+            aria-hidden
+          >
+            {excursion.imagenEmoji}
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-extrabold leading-tight truncate">{excursion.destino}</h1>
+            <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+              Panel de participantes
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
           <span className="badge badge-success">{confirmadas.length}/{excursion.cupoMaximo} confirmados</span>
           {enEspera.length > 0 && <span className="badge">{enEspera.length} en lista de espera</span>}
           <span className="badge">Asistencia: {asistieron}/{confirmadas.length}</span>
@@ -71,7 +90,7 @@ export default function PanelParticipantesPage() {
           const perfil = perfilDe(insc.usuarioId);
           const abierto = expandido === insc.id;
           return (
-            <div key={insc.id} className="card flex flex-col gap-2">
+            <div key={insc.id} className="card flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-3">
                 <span
                   className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-xl"
@@ -80,14 +99,8 @@ export default function PanelParticipantesPage() {
                 >
                   {perfil ? MOVILIDAD_ICONO[perfil.movilidad] : "❓"}
                 </span>
-                <span className="flex-1 text-lg font-bold">{usuario?.nombre ?? "—"}</span>
-                {insc.llevaAcompanante && <span className="badge">Con acompañante</span>}
-                {perfil?.acompananteRequerido && !insc.llevaAcompanante && (
-                  <span className="badge" style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}>
-                    Requiere acompañante — no confirmado
-                  </span>
-                )}
-                <label className="flex items-center gap-2 text-sm font-medium">
+                <span className="flex-1 min-w-0 text-lg font-bold truncate">{usuario?.nombre ?? "—"}</span>
+                <label className="flex items-center gap-2 text-sm font-semibold flex-shrink-0">
                   <input
                     type="checkbox"
                     className="h-6 w-6"
@@ -97,6 +110,18 @@ export default function PanelParticipantesPage() {
                   Asistió
                 </label>
               </div>
+
+              {(insc.llevaAcompanante || (perfil?.acompananteRequerido && !insc.llevaAcompanante)) && (
+                <div className="flex flex-wrap gap-2">
+                  {insc.llevaAcompanante && <span className="badge">Con acompañante</span>}
+                  {perfil?.acompananteRequerido && !insc.llevaAcompanante && (
+                    <span className="badge" style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}>
+                      Requiere acompañante — no confirmado
+                    </span>
+                  )}
+                </div>
+              )}
+
               <button
                 className="w-fit text-sm font-semibold underline"
                 style={{ color: "var(--color-primary)" }}
@@ -104,30 +129,33 @@ export default function PanelParticipantesPage() {
               >
                 {abierto ? "Ocultar detalle médico" : "Ver detalle médico"}
               </button>
+
               {abierto && (
-                <div className="flex flex-col gap-1 rounded-lg p-3 text-sm" style={{ background: "var(--color-bg-alt)" }}>
+                <div className="flex flex-col gap-1.5 rounded-xl p-3 text-sm" style={{ background: "var(--color-bg-alt)" }}>
                   {perfil ? (
                     <>
-                      <p>Movilidad: {perfil.movilidad}</p>
                       <p>
-                        Condiciones:{" "}
+                        <strong>Movilidad:</strong> {perfil.movilidad}
+                      </p>
+                      <p>
+                        <strong>Condiciones:</strong>{" "}
                         {[...perfil.condiciones, perfil.condicionLibre].filter(Boolean).join(", ") ||
                           "Ninguna reportada"}
                       </p>
                       <p>
-                        Medicamentos:{" "}
+                        <strong>Medicamentos:</strong>{" "}
                         {perfil.medicamentos.length
                           ? perfil.medicamentos.map((m) => `${m.nombre} (${m.horario})`).join(", ")
                           : "Ninguno reportado"}
                       </p>
                       <p>
-                        Contacto de emergencia: {perfil.contactoEmergencia.nombre} —{" "}
+                        <strong>Contacto de emergencia:</strong> {perfil.contactoEmergencia.nombre} —{" "}
                         {perfil.contactoEmergencia.telefono} ({perfil.contactoEmergencia.relacion})
                       </p>
                     </>
                   ) : (
-                    <p style={{ color: "var(--color-alert)" }}>
-                      ⚠️ Este participante no tiene perfil de salud registrado todavía.
+                    <p className="font-semibold" style={{ color: "var(--color-alert)" }}>
+                      Este participante no tiene perfil de salud registrado todavía.
                     </p>
                   )}
                 </div>
@@ -141,7 +169,7 @@ export default function PanelParticipantesPage() {
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-bold">Lista de espera</h2>
           {enEspera.map((insc) => (
-            <div key={insc.id} className="card">
+            <div key={insc.id} className="card font-semibold">
               {usuarioById(insc.usuarioId)?.nombre}
             </div>
           ))}
