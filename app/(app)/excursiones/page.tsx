@@ -7,6 +7,58 @@ import { useStore } from "@/lib/store";
 import { AccesibilidadBadge } from "@/components/AccesibilidadIcon";
 import { Excursion } from "@/lib/types";
 
+/* ── Banner: perfil de salud incompleto ─────────────────── */
+
+function BannerPerfilIncompleto({
+  nombreObjetivo,
+  esFamiliar,
+}: {
+  nombreObjetivo: string;
+  esFamiliar: boolean;
+}) {
+  const [cerrado, setCerrado] = useState(false);
+  if (cerrado) return null;
+
+  return (
+    <div
+      className="info-box flex items-start gap-3"
+      role="region"
+      aria-label="Aviso de perfil de salud incompleto"
+    >
+      <span className="text-2xl flex-shrink-0 mt-0.5" aria-hidden>
+        🩺
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-base">
+          {esFamiliar
+            ? `Completa el perfil de salud de ${nombreObjetivo}`
+            : "Completa tu perfil de salud"}
+        </p>
+        <p className="text-base mt-0.5">
+          {esFamiliar
+            ? `El coordinador necesita conocer las necesidades de ${nombreObjetivo} para preparar cada excursión con seguridad.`
+            : "El coordinador necesita conocer tus necesidades para preparar cada excursión con seguridad."}
+        </p>
+        <Link
+          href="/perfil-salud"
+          className="btn-primary mt-3 inline-block text-base"
+          style={{ minHeight: "44px", lineHeight: "44px", padding: "0 1.25rem" }}
+        >
+          Completar ahora →
+        </Link>
+      </div>
+      <button
+        onClick={() => setCerrado(true)}
+        aria-label="Cerrar aviso"
+        className="flex-shrink-0 text-2xl leading-none transition-opacity hover:opacity-60 mt-0.5"
+        style={{ color: "var(--color-primary)" }}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 /* ── Helpers ────────────────────────────────────────────── */
 
 function fechaChip(fecha: string) {
@@ -124,7 +176,7 @@ function ExcursionCard({
 /* ── Page ───────────────────────────────────────────────── */
 
 export default function ListadoExcursiones() {
-  const { excursiones, usuarios, currentUser, inscripcionesDe } = useStore();
+  const { excursiones, usuarios, currentUser, inscripcionesDe, perfilDe } = useStore();
 
   const colonias = useMemo(
     () => Array.from(new Set(excursiones.map((e) => e.colonia))),
@@ -146,8 +198,27 @@ export default function ListadoExcursiones() {
       (e.estado === "cancelada" || e.estado === "completada")
   );
 
+  // Banner de perfil incompleto — solo para adulto_mayor y familiar
+  const esFamiliar = currentUser.rol === "familiar";
+  const idObjetivo =
+    esFamiliar && currentUser.cuidaA ? currentUser.cuidaA : currentUser.id;
+  const nombreObjetivo =
+    esFamiliar && currentUser.cuidaA
+      ? (usuarios.find((u) => u.id === currentUser.cuidaA)?.nombre ?? "tu familiar")
+      : currentUser.nombre;
+  const perfilFaltante =
+    currentUser.rol !== "coordinador" && !perfilDe(idObjetivo);
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Banner: perfil de salud incompleto */}
+      {perfilFaltante && (
+        <BannerPerfilIncompleto
+          nombreObjetivo={nombreObjetivo}
+          esFamiliar={esFamiliar}
+        />
+      )}
+
       {/* Cabecera */}
       <div>
         <h1 className="text-3xl font-extrabold">Próximas excursiones</h1>

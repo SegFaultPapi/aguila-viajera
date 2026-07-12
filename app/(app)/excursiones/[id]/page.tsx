@@ -764,6 +764,30 @@ export default function DetalleExcursion() {
         </div>
       )}
 
+      {/* Nota: perfil de salud incompleto — visible justo antes de inscribirse */}
+      {excursionActiva && !esCoordinadorPropietario && !inscripcion && !perfil && (
+        <div className="info-box flex items-start gap-3">
+          <span className="text-xl flex-shrink-0 mt-0.5" aria-hidden>🩺</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold">
+              {currentUser.rol === "familiar"
+                ? `Sin perfil de salud de ${usuarioObjetivo.nombre}`
+                : "Tu perfil de salud está incompleto"}
+            </p>
+            <p className="text-base mt-0.5">
+              El coordinador lo necesita para preparar la excursión con seguridad.{" "}
+              <Link
+                href="/perfil-salud"
+                className="font-bold underline"
+                style={{ color: "var(--color-primary-dark)" }}
+              >
+                Completar ahora →
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Inscripción — solo en excursiones activas para no-coordinadores */}
       {excursionActiva && !esCoordinadorPropietario && !inscripcion && (
         <div className="card flex flex-col gap-3">
