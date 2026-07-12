@@ -23,6 +23,11 @@ interface BodyPublicarActa {
   coordinadorId: string;
   /** IDs internos de inscripción de quienes asistieron — solo para el hash, nunca on-chain */
   idsAsistentes: string[];
+  /**
+   * Si true, genera un actaId distinto para permitir republicar una versión
+   * actualizada del acta (ej. conteo de asistentes corregido).
+   */
+  forzarNueva?: boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -33,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
-  const { excursionId, destino, colonia, fecha, totalAsistentes, cupoMaximo, coordinadorId, idsAsistentes } = body;
+  const { excursionId, destino, colonia, fecha, totalAsistentes, cupoMaximo, coordinadorId, idsAsistentes, forzarNueva } = body;
 
   if (
     !excursionId ||
@@ -67,16 +72,19 @@ export async function POST(req: NextRequest) {
         cupoMaximo,
         coordinadorId,
         hashVerificacion,
+        forzarNueva: forzarNueva === true,
       },
       RED_ACTIVA
     );
 
+    const redEtherscan = RED_ACTIVA === "mainnet" ? "mainnet" : "sepolia";
     return NextResponse.json({
       txHash: resultado.txHash,
       actaId: resultado.actaId,
       blockNumber: resultado.blockNumber,
       publicadoEn: resultado.publicadoEn,
-      etherscanUrl: etherscanTxUrl(resultado.txHash, RED_ACTIVA === "mainnet" ? "mainnet" : "sepolia"),
+      yaExistia: resultado.yaExistia ?? false,
+      etherscanUrl: etherscanTxUrl(resultado.txHash, redEtherscan),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error al publicar el acta en blockchain.";

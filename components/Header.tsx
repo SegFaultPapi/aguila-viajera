@@ -10,6 +10,7 @@ const NAV_LINKS_COORDINADOR = [
   { href: "/coordinador", label: "Mi panel" },
   { href: "/excursiones", label: "Excursiones" },
   { href: "/coordinador/nueva-excursion", label: "Nueva excursión" },
+  { href: "/coordinador/panel-institucional", label: "Panel institucional" },
 ];
 
 const NAV_LINKS_USUARIO = [
@@ -36,7 +37,7 @@ export function Header() {
       )}
 
       <header
-        className="sticky top-0 z-40 border-b bg-white"
+        className="sticky top-0 z-40 border-b bg-white no-print"
         style={{ borderColor: "var(--color-border)" }}
       >
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">

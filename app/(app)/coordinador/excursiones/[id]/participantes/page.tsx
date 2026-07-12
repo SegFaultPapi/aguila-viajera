@@ -291,7 +291,7 @@ export default function PanelParticipantesPage() {
         anclajeExistente={excursion.anclajeBlockchain}
         publicando={publicando}
         errorPublicacion={errorPublicacion}
-        onPublicar={async () => {
+        onPublicar={async (forzarNueva = false) => {
           setPublicando(true);
           setErrorPublicacion(null);
           try {
@@ -308,6 +308,7 @@ export default function PanelParticipantesPage() {
                 cupoMaximo: excursion.cupoMaximo,
                 coordinadorId: excursion.coordinadorId,
                 idsAsistentes,
+                forzarNueva,
               }),
             });
             const datos = await respuesta.json();
@@ -343,7 +344,7 @@ interface SeccionBlockchainProps {
   anclajeExistente?: AnclajeBlockchain;
   publicando: boolean;
   errorPublicacion: string | null;
-  onPublicar: () => Promise<void>;
+  onPublicar: (forzarNueva?: boolean) => Promise<void>;
 }
 
 function SeccionBlockchain({
@@ -387,21 +388,30 @@ function SeccionBlockchain({
       </div>
 
       {anclajeExistente ? (
-        /* Ya publicada — mostrar información de la transacción */
+        /* Ya publicada (o TX enviada) */
         <div className="success-box flex flex-col gap-2">
-          <p className="font-bold">Acta publicada en Ethereum {anclajeExistente.red === "mainnet" ? "(Mainnet)" : "(Sepolia testnet)"}</p>
+          <p className="font-bold">
+            Acta publicada en Ethereum{" "}
+            {anclajeExistente.red === "mainnet" ? "(Mainnet)" : "(Sepolia testnet)"}
+          </p>
           <div className="flex flex-col gap-1 text-sm">
             <p>
               <strong>TX Hash:</strong>{" "}
               <span className="font-mono">{formatearHash(anclajeExistente.txHash)}</span>
             </p>
-            <p>
-              <strong>Bloque:</strong> #{anclajeExistente.blockNumber}
-            </p>
-            <p>
-              <strong>Publicada el:</strong>{" "}
-              {new Date(anclajeExistente.ancladoEn).toLocaleString("es-MX")}
-            </p>
+            {anclajeExistente.blockNumber > 0 ? (
+              <>
+                <p><strong>Bloque:</strong> #{anclajeExistente.blockNumber}</p>
+                <p>
+                  <strong>Publicada el:</strong>{" "}
+                  {new Date(anclajeExistente.ancladoEn).toLocaleString("es-MX")}
+                </p>
+              </>
+            ) : (
+              <p style={{ color: "var(--color-ink-soft)" }}>
+                Transacción enviada — esperando confirmación del bloque en Etherscan.
+              </p>
+            )}
           </div>
           <a
             href={etherscanTxUrl(anclajeExistente.txHash, anclajeExistente.red)}
@@ -412,6 +422,24 @@ function SeccionBlockchain({
           >
             Ver en Etherscan →
           </a>
+
+          {/* Republicar si cambiaron los asistentes o se necesita corregir */}
+          <div className="border-t pt-3" style={{ borderColor: "var(--color-success-border, #86efac)" }}>
+            <p className="text-xs mb-2" style={{ color: "var(--color-ink-soft)" }}>
+              ¿Cambió el número de asistentes o necesitas corregir el acta?
+            </p>
+            {errorPublicacion && (
+              <div className="alert-box text-sm mb-2">{errorPublicacion}</div>
+            )}
+            <button
+              className="btn-ghost-light text-sm w-full"
+              disabled={!contentHash || publicando}
+              onClick={() => { void onPublicar(true); }}
+              aria-busy={publicando}
+            >
+              {publicando ? "Publicando versión actualizada…" : "Publicar versión actualizada"}
+            </button>
+          </div>
         </div>
       ) : (
         /* Aún no publicada */

@@ -212,6 +212,61 @@ function ExcursionCard({
   );
 }
 
+/* ── Historial plegable ─────────────────────────────────── */
+
+function HistorialPlegable({ count, children }: { count: number; children: React.ReactNode }) {
+  const [abierto, setAbierto] = useState(false);
+
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden"
+      style={{ borderColor: "var(--color-border)", background: "var(--color-card)" }}
+    >
+      <button
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+        onClick={() => setAbierto((v) => !v)}
+        aria-expanded={abierto}
+        style={{ minHeight: "52px" }}
+      >
+        <span className="flex items-center gap-2">
+          <span className="font-extrabold text-base">Excursiones anteriores</span>
+          <span
+            className="badge"
+            style={{ background: "var(--color-bg-alt)", color: "var(--color-ink-soft)" }}
+          >
+            {count}
+          </span>
+        </span>
+        <span
+          aria-hidden
+          style={{
+            color: "var(--color-ink-soft)",
+            fontSize: "1.1rem",
+            flexShrink: 0,
+            display: "inline-block",
+            transition: "transform 0.2s ease",
+            transform: abierto ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        >
+          ▾
+        </span>
+      </button>
+
+      {abierto && (
+        <div
+          className="flex flex-col gap-4 px-4 pb-4"
+          style={{ borderTop: "1.5px solid var(--color-border)" }}
+        >
+          <p className="text-sm pt-3" style={{ color: "var(--color-ink-soft)" }}>
+            Excursiones canceladas o completadas.
+          </p>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Page ───────────────────────────────────────────────── */
 
 export default function ListadoExcursiones() {
@@ -323,11 +378,7 @@ export default function ListadoExcursiones() {
 
       {/* Historial de coordinador — excursiones canceladas / completadas */}
       {misExcursionesCerradas.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <h2 className="text-xl font-bold">Excursiones anteriores</h2>
-          <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
-            Excursiones que ya no aparecen en el listado principal.
-          </p>
+        <HistorialPlegable count={misExcursionesCerradas.length}>
           {misExcursionesCerradas.map((ex) => {
             const inscritos = inscripcionesDe(ex.id).filter((i) => i.estado === "confirmada").length;
             const esCoord = currentUser.rol === "coordinador" && currentUser.id === ex.coordinadorId;
@@ -341,7 +392,7 @@ export default function ListadoExcursiones() {
               </div>
             );
           })}
-        </div>
+        </HistorialPlegable>
       )}
     </div>
   );

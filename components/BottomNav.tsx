@@ -35,7 +35,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white"
+      className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white no-print"
       style={{ borderColor: "var(--color-border)" }}
       aria-label="Navegación principal"
     >

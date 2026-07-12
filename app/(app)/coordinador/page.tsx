@@ -474,6 +474,29 @@ export default function CoordinadorHome() {
               →
             </span>
           </Link>
+
+          <Link
+            href="/coordinador/panel-institucional"
+            className="card card-interactive flex items-center gap-4 no-underline"
+            style={{ textDecoration: "none" }}
+          >
+            <span
+              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
+              style={{ background: "var(--color-bg-alt)" }}
+              aria-hidden
+            >
+              📊
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-bold">Panel institucional</p>
+              <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+                Métricas agregadas para reportes a COPACO
+              </p>
+            </div>
+            <span className="text-xl" style={{ color: "var(--color-ink-soft)" }} aria-hidden>
+              →
+            </span>
+          </Link>
         </div>
       </section>
 

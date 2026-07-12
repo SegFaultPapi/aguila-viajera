@@ -466,6 +466,13 @@ h1, h2, h3 {
   animation: pulse-ring 2s ease-out infinite;
 }
 
+/* Reporte imprimible (panel institucional) */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
 /* Hero gradient orbs */
 .orb {
   position: absolute;
