@@ -20,6 +20,7 @@ export function BottomNav() {
 
   const tabs = isCoord
     ? [
+        { href: "/coordinador", icon: "🏠", label: "Inicio" },
         { href: "/excursiones", icon: "🗺️", label: "Excursiones" },
         { href: "/coordinador/nueva-excursion", icon: "➕", label: "Nueva" },
       ]
@@ -30,6 +31,7 @@ export function BottomNav() {
       ];
 
   function isActive(href: string) {
+    if (href === "/coordinador") return pathname === "/coordinador";
     if (href === "/excursiones")
       return (
         pathname === "/excursiones" ||

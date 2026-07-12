@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { AccesibilidadBadge } from "@/components/AccesibilidadIcon";
+import { PlaceholderImage } from "@/components/PlaceholderImage";
 import { Excursion } from "@/lib/types";
 
 /* ── Banner: perfil de salud incompleto ─────────────────── */
@@ -68,6 +69,38 @@ function fechaChip(fecha: string) {
   return { dia, mes };
 }
 
+/* ── Thumbnail de excursión ─────────────────────────────── */
+
+const RADIUS_TOP = "1.25rem 1.25rem 0 0";
+
+function ExcursionThumbnail({ id, emoji }: { id: string; emoji: string }) {
+  const [error, setError] = useState(false);
+
+  if (error) {
+    return (
+      <div style={{ borderRadius: RADIUS_TOP, overflow: "hidden" }}>
+        <PlaceholderImage label={emoji} aspect="aspect-[3/2]" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={`/images/excursiones/${id}.jpg`}
+      alt=""
+      aria-hidden
+      onError={() => setError(true)}
+      style={{
+        width: "100%",
+        aspectRatio: "3 / 2",
+        objectFit: "cover",
+        borderRadius: RADIUS_TOP,
+        display: "block",
+      }}
+    />
+  );
+}
+
 /* ── Tarjeta de excursión ───────────────────────────────── */
 
 function ExcursionCard({
@@ -94,79 +127,86 @@ function ExcursionCard({
       tabIndex={0}
       onClick={() => router.push(href)}
       onKeyDown={(e) => e.key === "Enter" && router.push(href)}
-      className="card card-interactive flex cursor-pointer gap-4 no-underline"
-      style={{ textDecoration: "none" }}
+      className="card card-interactive cursor-pointer overflow-hidden"
+      style={{ padding: 0, textDecoration: "none" }}
     >
-      {/* Chip de fecha */}
-      <div
-        className="flex flex-col items-center justify-center flex-shrink-0 rounded-2xl px-3 py-2 text-center"
-        style={{
-          background: "var(--color-primary-soft)",
-          minWidth: "56px",
-        }}
-      >
-        <span className="text-2xl font-extrabold leading-none" style={{ color: "var(--color-primary)" }}>
-          {dia}
-        </span>
-        <span className="text-sm font-bold uppercase" style={{ color: "var(--color-primary)" }}>
-          {mes}
-        </span>
-      </div>
+      {/* Thumbnail */}
+      <ExcursionThumbnail id={excursion.id} emoji={excursion.imagenEmoji} />
 
       {/* Contenido */}
-      <div className="flex flex-1 flex-col gap-2 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-2xl flex-shrink-0" aria-hidden>{excursion.imagenEmoji}</span>
-          <h2 className="text-xl font-extrabold leading-tight truncate">{excursion.destino}</h2>
-        </div>
-
-        <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
-          📍 {excursion.colonia} · {excursion.horaSalida}h
-        </p>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium" style={{ color: "var(--color-ink-soft)" }}>
-            {cupoLleno ? "Cupo lleno" : pocosLugares ? `${excursion.cupoMaximo - inscritosConfirmados} lugares disponibles` : `${inscritosConfirmados}/${excursion.cupoMaximo} inscritos`}
+      <div className="flex gap-4 p-5">
+        {/* Chip de fecha */}
+        <div
+          className="flex flex-col items-center justify-center flex-shrink-0 rounded-2xl px-3 py-2 text-center self-start"
+          style={{
+            background: "var(--color-primary-soft)",
+            minWidth: "56px",
+          }}
+        >
+          <span className="text-2xl font-extrabold leading-none" style={{ color: "var(--color-primary)" }}>
+            {dia}
           </span>
-          {excursion.costo === 0 && (
-            <span className="badge badge-success">Gratuito</span>
-          )}
+          <span className="text-sm font-bold uppercase" style={{ color: "var(--color-primary)" }}>
+            {mes}
+          </span>
         </div>
 
-        {/* Badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          <AccesibilidadBadge excursion={excursion} />
-          {excursion.requiereAcompanante && (
-            <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
-              👥 Requiere acompañante
-            </span>
-          )}
-          {excursion.estado === "reprogramada" && (
-            <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
-              Fecha cambiada
-            </span>
-          )}
-          {excursion.estado === "cancelada" && (
-            <span className="badge" style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}>
-              Cancelada
-            </span>
-          )}
-        </div>
+        {/* Info */}
+        <div className="flex flex-1 flex-col gap-2 min-w-0">
+          <h2 className="text-xl font-extrabold leading-tight">{excursion.destino}</h2>
 
-        <div className="flex items-center justify-between">
-          <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
-            Coordina: {coordinadorNombre}
+          <p className="text-base" style={{ color: "var(--color-ink-soft)" }}>
+            📍 {excursion.colonia} · {excursion.horaSalida}h
           </p>
-          {esCoordinador && (
-            <Link
-              href={`/coordinador/excursiones/${excursion.id}/participantes`}
-              className="text-sm font-bold"
-              style={{ color: "var(--color-primary)" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              Panel →
-            </Link>
-          )}
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium" style={{ color: "var(--color-ink-soft)" }}>
+              {cupoLleno
+                ? "Cupo lleno"
+                : pocosLugares
+                ? `${excursion.cupoMaximo - inscritosConfirmados} lugares disponibles`
+                : `${inscritosConfirmados}/${excursion.cupoMaximo} inscritos`}
+            </span>
+            {excursion.costo === 0 && (
+              <span className="badge badge-success">Gratuito</span>
+            )}
+          </div>
+
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <AccesibilidadBadge excursion={excursion} />
+            {excursion.requiereAcompanante && (
+              <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
+                👥 Requiere acompañante
+              </span>
+            )}
+            {excursion.estado === "reprogramada" && (
+              <span className="badge" style={{ background: "var(--color-accent-soft)", color: "var(--color-accent-dark)" }}>
+                Fecha cambiada
+              </span>
+            )}
+            {excursion.estado === "cancelada" && (
+              <span className="badge" style={{ background: "var(--color-alert-bg)", color: "var(--color-alert)" }}>
+                Cancelada
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+              Coordina: {coordinadorNombre}
+            </p>
+            {esCoordinador && (
+              <Link
+                href={`/coordinador/excursiones/${excursion.id}/participantes`}
+                className="text-sm font-bold"
+                style={{ color: "var(--color-primary)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Panel →
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </div>

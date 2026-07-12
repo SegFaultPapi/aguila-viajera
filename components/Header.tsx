@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useStore } from "@/lib/store";
 
 const NAV_LINKS_COORDINADOR = [
+  { href: "/coordinador", label: "Mi panel" },
   { href: "/excursiones", label: "Excursiones" },
   { href: "/coordinador/nueva-excursion", label: "Nueva excursión" },
 ];
@@ -48,7 +49,10 @@ export function Header() {
         {/* Nav — solo desktop */}
         <nav className="hidden md:flex items-center gap-5 text-sm font-medium">
           {navLinks.map((link) => {
-            const active = pathname?.startsWith(link.href);
+            const active =
+              link.href === "/coordinador"
+                ? pathname === "/coordinador"
+                : pathname?.startsWith(link.href);
             return (
               <Link
                 key={link.href}
