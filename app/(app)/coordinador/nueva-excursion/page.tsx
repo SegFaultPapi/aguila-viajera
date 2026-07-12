@@ -65,8 +65,8 @@ export default function NuevaExcursionPage() {
     setPaso((p) => Math.max(p - 1, 0));
   }
 
-  function publicar() {
-    const nueva = crearExcursion({
+  async function publicar() {
+    const nueva = await crearExcursion({
       destino,
       colonia: currentUser.colonia,
       fecha,

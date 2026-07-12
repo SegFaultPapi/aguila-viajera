@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { AccesibilidadBadge } from "@/components/AccesibilidadIcon";
@@ -40,16 +41,21 @@ function ExcursionCard({
   inscritosConfirmados: number;
   esCoordinador: boolean;
 }) {
+  const router = useRouter();
   const { dia, mes } = fechaChip(excursion.fecha);
   const dias = diasRestantes(excursion.fecha);
   const pct = Math.min((inscritosConfirmados / excursion.cupoMaximo) * 100, 100);
   const cupoLleno = inscritosConfirmados >= excursion.cupoMaximo;
   const pocosLugares = !cupoLleno && pct >= 75;
+  const href = `/excursiones/${excursion.id}`;
 
   return (
-    <Link
-      href={`/excursiones/${excursion.id}`}
-      className="card card-interactive flex gap-4 no-underline"
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => router.push(href)}
+      onKeyDown={(e) => e.key === "Enter" && router.push(href)}
+      className="card card-interactive flex cursor-pointer gap-4 no-underline"
       style={{ textDecoration: "none" }}
     >
       {/* Chip de fecha */}
@@ -140,7 +146,7 @@ function ExcursionCard({
           )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 

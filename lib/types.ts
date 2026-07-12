@@ -1,5 +1,41 @@
 export type Rol = "adulto_mayor" | "familiar" | "coordinador";
 
+// ── Épica C: Integridad de registros ─────────────────────────────────────────
+
+/**
+ * Estado de anclaje en blockchain. El prototipo lo simula en memoria;
+ * en producción (Fase 1) este campo se persiste en la tabla append-only.
+ */
+export interface AnclajeBlockchain {
+  /** Hash de la transacción Ethereum que ancló el registro */
+  txHash: string;
+  /** ID del registro devuelto por DocumentRegistry.anclar() */
+  registroId: string;
+  /** Número de bloque donde quedó incluida la tx */
+  blockNumber: number;
+  /** Timestamp ISO del bloque */
+  ancladoEn: string;
+  /** Red: "sepolia" (testnet) o "mainnet" */
+  red: "sepolia" | "mainnet";
+}
+
+/**
+ * Entrada append-only del log de eventos de una excursión.
+ * Nunca se modifica — los cambios generan una nueva entrada referenciando la anterior.
+ */
+export interface EventoLog {
+  /** Hash SHA-256 (hex) del contenido serializado de este evento */
+  contentHash: string;
+  fecha: string;
+  autorId: string;
+  accion: string;
+  motivo?: string;
+  /** Referencia al hash del evento anterior (null = primer evento) */
+  hashPrevio: string | null;
+  /** Anclaje en cadena, si ya se ancló */
+  anclaje?: AnclajeBlockchain;
+}
+
 export type Movilidad =
   | "independiente"
   | "baston"
@@ -39,6 +75,7 @@ export interface PerfilSalud {
   actualizadoPorId: string;
 }
 
+/** @deprecated Usar EventoLog — este tipo persiste solo para compatibilidad con seed-data */
 export interface RegistroHistorial {
   fecha: string;
   autorId: string;
@@ -70,6 +107,12 @@ export interface Excursion {
   imagenEmoji: string;
   descripcionLarga?: string;
   historial: RegistroHistorial[];
+  /** Hash SHA-256 (hex) del contenido canónico de esta excursión al momento de su creación */
+  contentHash?: string;
+  /** Log append-only de eventos (incluye el evento de creación como primer entrada) */
+  eventLog?: EventoLog[];
+  /** Anclaje del registro de creación en Ethereum */
+  anclajeBlockchain?: AnclajeBlockchain;
 }
 
 export type EstadoInscripcion = "confirmada" | "lista_espera" | "cancelada";
@@ -83,4 +126,6 @@ export interface Inscripcion {
   llevaAcompanante: boolean;
   asistenciaConfirmada: boolean;
   creadoEn: string;
+  /** Hash SHA-256 (hex) del contenido de este check-in al momento de confirmarse */
+  checkinHash?: string;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 
 /* ── Scroll-reveal hook ─────────────────────────────────── */
@@ -110,7 +110,7 @@ function Hero() {
         aria-hidden
       />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 px-5 pt-16 pb-20 sm:flex-row sm:gap-12 sm:pt-24 sm:pb-28">
+      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 px-5 pt-16 pb-24 sm:flex-row sm:gap-12 sm:pt-24 sm:pb-36">
         <div className="flex flex-col gap-5 text-center sm:text-left sm:w-[35%] sm:flex-shrink-0">
           <h1
             className="text-4xl font-extrabold leading-tight sm:text-5xl animate-fade-up delay-100"
@@ -146,8 +146,8 @@ function Hero() {
           <img
             src="/images/ui/aguila-bienvenida.png"
             alt="Águila Viajera dando la bienvenida"
-            className="pointer-events-none select-none absolute -bottom-10 -right-8 w-36 sm:w-44"
-            style={{ zIndex: 10, filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.55))" }}
+            className="pointer-events-none select-none absolute -bottom-12 -left-10 w-48 sm:w-64"
+            style={{ zIndex: 10, filter: "drop-shadow(0 10px 36px rgba(0,0,0,0.6))" }}
           />
         </div>
       </div>
@@ -182,11 +182,11 @@ function MomentosCarousel() {
   const momento = MOMENTOS[activo];
 
   return (
-    <section className="px-5 py-16" style={{ background: "var(--color-bg-alt)" }}>
+    <section className="px-5 py-16" style={{ background: "#2e86c1", color: "white" }}>
       <div className="mx-auto max-w-5xl">
         <p
           className="reveal text-center text-sm font-semibold uppercase tracking-widest mb-8"
-          style={{ color: "var(--color-primary-dark)" }}
+          style={{ color: "var(--color-accent)" }}
         >
           Así se ven nuestras excursiones
         </p>
@@ -208,8 +208,8 @@ function MomentosCarousel() {
             />
           </div>
           <div key={`text-${activo}`} className="flex-1 animate-fade-in">
-            <h3 className="text-3xl font-extrabold">{momento.titulo}</h3>
-            <p className="mt-3 text-xl" style={{ color: "var(--color-ink-soft)" }}>
+            <h3 className="text-3xl font-extrabold" style={{ color: "white" }}>{momento.titulo}</h3>
+            <p className="mt-3 text-xl" style={{ color: "rgba(255,255,255,0.72)" }}>
               {momento.detalle}
             </p>
           </div>
@@ -223,7 +223,7 @@ function MomentosCarousel() {
               aria-label={`Mostrar: ${m.titulo}`}
               aria-current={i === activo}
               className="h-3 w-3 rounded-full transition-colors"
-              style={{ background: i === activo ? "var(--color-primary)" : "var(--color-border)" }}
+              style={{ background: i === activo ? "var(--color-accent)" : "rgba(255,255,255,0.25)" }}
             />
           ))}
         </div>
@@ -263,59 +263,127 @@ function ComoFunciona() {
   );
 }
 
-function DestinosCards({
+function DestinosCarousel({
   excursiones,
 }: {
   excursiones: ReturnType<typeof useStore>["excursiones"];
 }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const paused = useRef(false);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragScrollStart = useRef(0);
+
+  /* Auto-scroll lento */
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || excursiones.length === 0) return;
+    let raf: number;
+    const SPEED = 0.45; // px por frame ≈ 27 px/s a 60 fps
+
+    const tick = () => {
+      if (!paused.current && !isDragging.current) {
+        track.scrollLeft += SPEED;
+        /* Loop suave al llegar al final */
+        if (track.scrollLeft >= track.scrollWidth - track.clientWidth - 2) {
+          track.scrollLeft = 0;
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [excursiones.length]);
+
+  /* Drag con mouse */
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragScrollStart.current = trackRef.current?.scrollLeft ?? 0;
+    trackRef.current?.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !trackRef.current) return;
+    trackRef.current.scrollLeft = dragScrollStart.current - (e.clientX - dragStartX.current);
+  };
+  const onPointerUp = () => { isDragging.current = false; };
+
+  const edgePad = "max(1.25rem, calc((100vw - 64rem) / 2 + 1.25rem))";
+
   return (
-    <section className="px-5 py-16" style={{ background: "var(--color-bg-alt)" }}>
-      <div className="mx-auto max-w-5xl">
-        <div className="reveal flex flex-wrap items-end justify-between gap-3 mb-8">
+    <section className="py-16 overflow-hidden" style={{ background: "var(--color-bg-alt)" }}>
+      {/* Cabecera */}
+      <div className="mx-auto max-w-5xl px-5 mb-8 reveal">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="text-3xl font-extrabold">Destinos COPACO</h2>
           <Link href="/excursiones" className="font-bold underline" style={{ color: "var(--color-primary)" }}>
             Ver todas
           </Link>
         </div>
+      </div>
 
-        <div className="grid gap-6 sm:grid-cols-3">
-          {excursiones.map((ex, i) => (
-            <div key={ex.id} className={`relative${i === 0 ? "" : ""}`}>
-              {i === 0 && (
-                <img
-                  src="/images/ui/aguila-bienvenida.png"
-                  alt="Águila Viajera explorando destinos"
-                  className="pointer-events-none select-none absolute -bottom-8 -left-6 w-32 sm:w-40"
-                  style={{ zIndex: 10, filter: "drop-shadow(0 6px 20px rgba(0,0,0,0.45))" }}
-                />
-              )}
-              <Link
-                href={`/excursiones/${ex.id}`}
-                className="reveal card card-interactive flex flex-col gap-0 overflow-hidden !p-0 h-full"
-                style={{ transitionDelay: `${i * 80}ms` }}
-              >
-                <ExcursionImg
-                  src={`/images/excursiones/${ex.id}.jpg`}
-                  alt={ex.destino}
-                  aspect="aspect-[3/2]"
-                  className="rounded-none rounded-t-xl"
-                />
-                <div className="flex flex-col gap-1.5 p-4">
-                  <h3 className="text-lg font-extrabold leading-snug">{ex.destino}</h3>
-                  <p
-                    className="text-sm line-clamp-2"
-                    style={{ color: "var(--color-ink-soft)" }}
-                  >
-                    {ex.descripcionLarga}
-                  </p>
-                </div>
-              </Link>
+      {/* Track deslizable */}
+      <div
+        ref={trackRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+        onMouseEnter={() => { paused.current = true; }}
+        onMouseLeave={() => { paused.current = false; }}
+        onTouchStart={() => { paused.current = true; }}
+        onTouchEnd={() => { paused.current = false; }}
+        className="flex gap-5 overflow-x-auto cursor-grab active:cursor-grabbing"
+        style={{
+          scrollSnapType: "x mandatory",
+          scrollbarWidth: "none",
+          WebkitOverflowScrolling: "touch",
+          paddingLeft: edgePad,
+          paddingRight: edgePad,
+          paddingBottom: "1.5rem",
+          userSelect: "none",
+        }}
+      >
+        {excursiones.map((ex) => (
+          <Link
+            key={ex.id}
+            href={`/excursiones/${ex.id}`}
+            draggable={false}
+            className="card card-interactive flex flex-col gap-0 overflow-hidden !p-0 flex-shrink-0"
+            style={{ width: "clamp(260px, 72vw, 320px)", scrollSnapAlign: "start" }}
+          >
+            <ExcursionImg
+              src={`/images/excursiones/${ex.id}.jpg`}
+              alt={ex.destino}
+              aspect="aspect-[3/2]"
+              className="rounded-none rounded-t-xl"
+            />
+            <div className="flex flex-col gap-1.5 p-4">
+              <h3 className="text-lg font-extrabold leading-snug">{ex.destino}</h3>
+              <p className="text-sm line-clamp-2" style={{ color: "var(--color-ink-soft)" }}>
+                {ex.descripcionLarga}
+              </p>
             </div>
-          ))}
-          {excursiones.length === 0 && (
-            <p style={{ color: "var(--color-ink-soft)" }}>Aún no hay destinos publicados.</p>
-          )}
-        </div>
+          </Link>
+        ))}
+        {excursiones.length === 0 && (
+          <p className="px-5" style={{ color: "var(--color-ink-soft)" }}>Aún no hay destinos publicados.</p>
+        )}
+      </div>
+
+      {/* Mascota — estática, fuera del track */}
+      <div className="mx-auto max-w-5xl px-5 relative" style={{ height: 0 }}>
+        <img
+          src="/images/ui/aguila-bienvenida.png"
+          alt="Águila Viajera"
+          className="pointer-events-none select-none absolute w-28 sm:w-36"
+          style={{
+            bottom: "calc(100% + 1.5rem)",
+            right: "1rem",
+            zIndex: 10,
+            filter: "drop-shadow(0 6px 20px rgba(0,0,0,0.4))",
+          }}
+        />
       </div>
     </section>
   );
@@ -330,9 +398,9 @@ function Garantias() {
   ];
 
   return (
-    <section className="px-5 py-16" style={{ background: "var(--color-bg-alt)" }}>
+    <section className="px-5 py-16" style={{ background: "#2e86c1", color: "white" }}>
       <div className="mx-auto max-w-5xl">
-        <h2 className="reveal text-center text-3xl font-extrabold">Diseñado con COPACO</h2>
+        <h2 className="reveal text-center text-3xl font-extrabold" style={{ color: "white" }}>Diseñado con COPACO</h2>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           {puntos.map((p, i) => (
@@ -343,8 +411,8 @@ function Garantias() {
                 aria-hidden
               />
               <div>
-                <p className="text-lg font-bold">{p.titulo}</p>
-                <p className="mt-1 text-base" style={{ color: "var(--color-ink-soft)" }}>
+                <p className="text-lg font-bold" style={{ color: "white" }}>{p.titulo}</p>
+                <p className="mt-1 text-base" style={{ color: "rgba(255,255,255,0.68)" }}>
                   {p.detalle}
                 </p>
               </div>
@@ -456,7 +524,7 @@ export default function LandingPage() {
     <div className="flex flex-1 flex-col">
       <TopBar />
       <Hero />
-      <DestinosCards excursiones={destinos} />
+      <DestinosCarousel excursiones={destinos} />
       <MomentosCarousel />
       <ComoFunciona />
       <Garantias />

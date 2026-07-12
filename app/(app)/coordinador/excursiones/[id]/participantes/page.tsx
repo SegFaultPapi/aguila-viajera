@@ -1,10 +1,17 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
-import { Movilidad } from "@/lib/types";
+import { AnclajeBlockchain, Movilidad } from "@/lib/types";
 import { BackButton } from "@/components/BackButton";
+import {
+  contenidoCanonicoExcursion,
+  formatearHash,
+  hashObjeto,
+} from "@/lib/crypto";
+import { anclarRegistro } from "@/lib/blockchain/anchoring";
+import { etherscanTxUrl, RED_ACTIVA } from "@/lib/blockchain/config";
 
 const MOVILIDAD_ICONO: Record<Movilidad, string> = {
   independiente: "🚶",
@@ -16,11 +23,30 @@ const MOVILIDAD_ICONO: Record<Movilidad, string> = {
 
 export default function PanelParticipantesPage() {
   const { id } = useParams<{ id: string }>();
-  const { excursiones, currentUser, inscripcionesDe, usuarioById, perfilDe, marcarAsistencia } =
-    useStore();
+  const {
+    excursiones,
+    currentUser,
+    inscripcionesDe,
+    usuarioById,
+    perfilDe,
+    marcarAsistencia,
+    registrarAnclajeBlockchain,
+  } = useStore();
   const [expandido, setExpandido] = useState<string | null>(null);
 
+  // ── Épica C: hash del acta y estado de anclaje ────────────────────────────
+  const [contentHash, setContentHash] = useState<string>("");
+  const [anclando, setAnclando] = useState(false);
+  const [errorAnclaje, setErrorAnclaje] = useState<string | null>(null);
+
   const excursion = excursiones.find((e) => e.id === id);
+
+  // Calcular hash del acta al cargar la página
+  useEffect(() => {
+    if (!excursion) return;
+    const canónico = contenidoCanonicoExcursion(excursion);
+    hashObjeto(canónico).then(setContentHash);
+  }, [excursion]);
 
   if (!excursion) {
     return (
@@ -105,7 +131,7 @@ export default function PanelParticipantesPage() {
                     type="checkbox"
                     className="h-6 w-6"
                     checked={insc.asistenciaConfirmada}
-                    onChange={(e) => marcarAsistencia(insc.id, e.target.checked)}
+                    onChange={(e) => { void marcarAsistencia(insc.id, e.target.checked); }}
                   />
                   Asistió
                 </label>
@@ -173,6 +199,141 @@ export default function PanelParticipantesPage() {
               {usuarioById(insc.usuarioId)?.nombre}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Épica C: Registro en Blockchain ─────────────────────────────── */}
+      <SeccionBlockchain
+        excursionId={excursion.id}
+        excursionDestino={excursion.destino}
+        contentHash={contentHash}
+        anclajeExistente={excursion.anclajeBlockchain}
+        anclando={anclando}
+        errorAnclaje={errorAnclaje}
+        onAnclar={async () => {
+          if (!contentHash) return;
+          setAnclando(true);
+          setErrorAnclaje(null);
+          try {
+            const { anclaje, etherscanUrl } = await anclarRegistro({
+              contentHashHex: contentHash,
+              tipo: "excursion",
+              referenciaId: excursion.id,
+            });
+            registrarAnclajeBlockchain(excursion.id, anclaje);
+            // Abrir Etherscan en nueva pestaña
+            window.open(etherscanUrl, "_blank", "noopener,noreferrer");
+          } catch (err) {
+            setErrorAnclaje(
+              err instanceof Error ? err.message : "Error al anclar. Inténtalo de nuevo."
+            );
+          } finally {
+            setAnclando(false);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+// ── Componente de sección blockchain ─────────────────────────────────────────
+
+interface SeccionBlockchainProps {
+  contentHash: string;
+  anclajeExistente?: AnclajeBlockchain;
+  anclando: boolean;
+  errorAnclaje: string | null;
+  onAnclar: () => Promise<void>;
+}
+
+function SeccionBlockchain({
+  contentHash,
+  anclajeExistente,
+  anclando,
+  errorAnclaje,
+  onAnclar,
+}: SeccionBlockchainProps) {
+  return (
+    <div className="card flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <span className="text-xl" aria-hidden>⛓️</span>
+        <h2 className="text-lg font-bold">Registro en Blockchain</h2>
+      </div>
+
+      <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+        Ancla el acta de esta excursión en Ethereum para que el registro sea
+        verificable públicamente e imposible de borrar, incluso por COPACO.
+      </p>
+
+      {/* Hash del acta */}
+      <div
+        className="rounded-xl p-3 flex flex-col gap-1.5"
+        style={{ background: "var(--color-bg-alt)" }}
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-ink-soft)" }}>
+          Hash SHA-256 del acta
+        </p>
+        <p className="font-mono text-sm break-all select-all">
+          {contentHash || "Calculando…"}
+        </p>
+        <p className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
+          Cualquier modificación al contenido produce un hash diferente —
+          la alteración queda expuesta automáticamente.
+        </p>
+      </div>
+
+      {anclajeExistente ? (
+        /* Ya anclado — mostrar información del anclaje */
+        <div className="success-box flex flex-col gap-2">
+          <p className="font-bold">Acta anclada en Ethereum {anclajeExistente.red === "mainnet" ? "(Mainnet)" : "(Sepolia testnet)"}</p>
+          <div className="flex flex-col gap-1 text-sm">
+            <p>
+              <strong>TX Hash:</strong>{" "}
+              <span className="font-mono">{formatearHash(anclajeExistente.txHash)}</span>
+            </p>
+            <p>
+              <strong>Bloque:</strong> #{anclajeExistente.blockNumber}
+            </p>
+            <p>
+              <strong>Anclado el:</strong>{" "}
+              {new Date(anclajeExistente.ancladoEn).toLocaleString("es-MX")}
+            </p>
+          </div>
+          <a
+            href={etherscanTxUrl(anclajeExistente.txHash, anclajeExistente.red)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary text-center text-sm"
+            style={{ display: "block", textDecoration: "none" }}
+          >
+            Ver en Etherscan →
+          </a>
+        </div>
+      ) : (
+        /* Aún no anclado */
+        <div className="flex flex-col gap-3">
+          <div className="info-box text-sm">
+            <strong>Red activa:</strong> {RED_ACTIVA === "mainnet" ? "Ethereum Mainnet" : "Sepolia Testnet"}{" "}
+            — El coordinador firma con su wallet institucional COPACO.
+          </div>
+
+          {errorAnclaje && (
+            <div className="alert-box text-sm">{errorAnclaje}</div>
+          )}
+
+          <button
+            className="btn-primary"
+            disabled={!contentHash || anclando}
+            onClick={() => { void onAnclar(); }}
+            aria-busy={anclando}
+          >
+            {anclando ? "Anclando en Ethereum…" : "Anclar acta en Ethereum"}
+          </button>
+
+          <p className="text-xs text-center" style={{ color: "var(--color-ink-soft)" }}>
+            Requiere wallet conectada (MetaMask o Privy) con ETH para gas.
+            {RED_ACTIVA !== "mainnet" && " En Sepolia testnet el gas es gratuito."}
+          </p>
         </div>
       )}
     </div>

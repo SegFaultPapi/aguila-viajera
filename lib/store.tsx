@@ -2,7 +2,12 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { EXCURSIONES, INSCRIPCIONES, PERFILES_SALUD, USUARIOS } from "./seed-data";
-import { Excursion, Inscripcion, PerfilSalud, Usuario } from "./types";
+import { AnclajeBlockchain, Excursion, Inscripcion, PerfilSalud, Usuario } from "./types";
+import {
+  contenidoCanonicoCheckin,
+  contenidoCanonicoExcursion,
+  hashObjeto,
+} from "./crypto";
 
 interface StoreState {
   usuarios: Usuario[];
@@ -17,9 +22,10 @@ interface StoreState {
   inscripcionVigente: (excursionId: string, usuarioId: string) => Inscripcion | undefined;
   inscribir: (excursionId: string, usuarioId: string, llevaAcompanante: boolean) => Inscripcion;
   cancelarInscripcion: (inscripcionId: string) => void;
-  crearExcursion: (data: Omit<Excursion, "id" | "estado" | "creadoEn" | "historial">) => Excursion;
+  crearExcursion: (data: Omit<Excursion, "id" | "estado" | "creadoEn" | "historial">) => Promise<Excursion>;
   guardarPerfilSalud: (perfil: Omit<PerfilSalud, "actualizadoEn">) => void;
-  marcarAsistencia: (inscripcionId: string, asistio: boolean) => void;
+  marcarAsistencia: (inscripcionId: string, asistio: boolean) => Promise<void>;
+  registrarAnclajeBlockchain: (excursionId: string, anclaje: AnclajeBlockchain) => void;
   usuarioById: (id: string) => Usuario | undefined;
   usuarioPorTelefono: (telefono: string) => Usuario | undefined;
   usuarioPorEmail: (email: string) => Usuario | undefined;
@@ -146,13 +152,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const crearExcursion = useCallback(
-    (data: Omit<Excursion, "id" | "estado" | "creadoEn" | "historial">) => {
+    async (data: Omit<Excursion, "id" | "estado" | "creadoEn" | "historial">) => {
       const ahora = new Date(2026, 5, 20).toISOString();
-      const nueva: Excursion = {
+      const id = nextId("ex");
+
+      // Épica C: calcular hash del contenido inmutable antes de guardar
+      const canónico = contenidoCanonicoExcursion({
         ...data,
-        id: nextId("ex"),
+        id,
         estado: "publicada",
         creadoEn: ahora,
+      });
+      const contentHash = await hashObjeto(canónico);
+
+      const nueva: Excursion = {
+        ...data,
+        id,
+        estado: "publicada",
+        creadoEn: ahora,
+        contentHash,
         historial: [
           {
             fecha: ahora,
@@ -182,11 +200,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const marcarAsistencia = useCallback((inscripcionId: string, asistio: boolean) => {
+  const marcarAsistencia = useCallback(async (inscripcionId: string, asistio: boolean) => {
+    // Épica C: al confirmar asistencia, generar el hash del check-in
+    let checkinHash: string | undefined;
+    if (asistio) {
+      const inscActual = inscripciones.find((i) => i.id === inscripcionId);
+      if (inscActual) {
+        const canónico = contenidoCanonicoCheckin({
+          ...inscActual,
+          asistenciaConfirmada: true,
+        });
+        checkinHash = await hashObjeto(canónico);
+      }
+    }
+
     setInscripciones((prev) =>
-      prev.map((i) => (i.id === inscripcionId ? { ...i, asistenciaConfirmada: asistio } : i))
+      prev.map((i) =>
+        i.id === inscripcionId
+          ? { ...i, asistenciaConfirmada: asistio, ...(checkinHash ? { checkinHash } : {}) }
+          : i
+      )
     );
-  }, []);
+  }, [inscripciones]);
+
+  const registrarAnclajeBlockchain = useCallback(
+    (excursionId: string, anclaje: AnclajeBlockchain) => {
+      setExcursiones((prev) =>
+        prev.map((e) =>
+          e.id === excursionId ? { ...e, anclajeBlockchain: anclaje } : e
+        )
+      );
+    },
+    []
+  );
 
   const value: StoreState = {
     usuarios,
@@ -209,6 +255,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     usuarioPorEmail,
     registrarUsuario,
     vincularFamiliar,
+    registrarAnclajeBlockchain,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
