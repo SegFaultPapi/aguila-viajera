@@ -4,85 +4,111 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repository currently contains **no application code** — only a product/MVP spec at
-`docs/aguila-viajera-mvp.md`. The `.gitignore` is pre-configured for a Next.js/Node project,
-indicating that's the intended stack, but no `package.json`, source tree, or build tooling exists
-yet. There are no build, lint, or test commands to run at this stage.
+This repo has a frontend-only, no-backend **prototype** under `app/` (Next.js) whose job is to
+validate UX with real COPACO users before any backend/infra investment. It is not the production
+codebase — read "Prototype vs. production scope" below before assuming any pattern here should
+carry forward.
 
-When scaffolding the project for the first time, follow the stack and architecture below rather
-than inventing a different structure, and update this file with real commands (`npm run dev`,
-`npm test`, etc.) as soon as they exist.
+Two planning docs live in `docs/` and **disagree with each other**; `aguila-viajera-prd.md` is
+the one to trust for scope, personas, acceptance criteria, and target stack — see
+`docs/plan-desarrollo.md` §0 for the full conflict breakdown and why the PRD wins. Read the PRD
+before implementing any feature; it's dated later and marked "listo para generar tickets"
+(ready to generate tickets), i.e. it supersedes the earlier MVP doc.
 
-## What this project is
+## Commands
 
-**Águila Viajera** is a community platform for **COPACO**, a volunteer group in Iztapalapa, CDMX
-that organizes excursions for elderly adults. Today COPACO coordinates everything over WhatsApp
-with no health records and no tamper-proof record of the official documents ("actas") they
-produce — the local government has previously erased/appropriated their records. The platform
-must fix three things at once: an accessible registration/enrollment flow for elderly users, a
-health-profile system for trip safety, and a blockchain-backed, publicly verifiable record of
-each acta.
+All commands run from `app/`:
 
-Full spec (flow, features, out-of-scope list, success criteria): `docs/aguila-viajera-mvp.md`.
-Read it before implementing any feature — it is the source of truth for scope.
+```bash
+npm run dev      # start dev server at http://localhost:3000
+npm run build    # production build (also runs the TypeScript check)
+npm run lint     # ESLint (flat config, next/core-web-vitals + next/typescript)
+npx tsc --noEmit # type-check only, no build output
+```
 
-## Intended architecture
+There is no test suite yet — no `npm test` script exists.
 
-| Layer | Technology |
-|---|---|
-| Frontend | React — responsive, mobile-first web app (no PWA/installation in MVP) |
-| Backend | Node.js + Supabase |
-| Auth | Privy — email or phone number only, no password, no wallet exposed to users |
-| AI chatbot | Claude API (`claude-sonnet-4-6`) |
-| Blockchain | Ethereum mainnet, smart contract `DocumentRegistry` (Solidity) |
-| Document storage | IPFS, with the resulting hash anchored on-chain |
-| Institutional wallet | Gnosis Safe multisig — only COPACO can sign; individual volunteers never touch wallets |
+## Docs map
 
-### Core flow (design constraint, not just a feature list)
+- `docs/aguila-viajera-mvp.md` — earlier concept doc: narrative of the problem, and a wider
+  product vision (blockchain acta registry, Privy auth, Claude chatbot). Useful for *why this
+  project exists*, not for *what to build right now*.
+- `docs/aguila-viajera-prd.md` — **the current source of truth**. Scopes the MVP down to a single
+  module (Turismo Comunitario / community excursions), defines 4 epics with acceptance criteria
+  (A: registration, B: excursion management, C: append-only integrity records, D: institutional
+  dashboard), and recommends Flutter/RN + React+TS + NestJS + PostgreSQL + phone/OTP auth — no
+  blockchain, no Privy, no chatbot in this MVP (those live in the PRD's Fase 3 / post-MVP
+  roadmap, not now).
+- `docs/plan-desarrollo.md` — the development plan derived from the PRD: phases (-1 prototype, 0
+  foundational, 1 MVP core, 2 institutional panel, 3 post-MVP), the doc-conflict resolution, and
+  what's in/out of the current prototype.
 
-1. User lands on the site and an AI chatbot triages them: adulto mayor (elderly user), familiar
-   (linked family member), or voluntario COPACO.
-2. Signup via Privy (email/phone, no password/wallet) — the elderly user can do this alone or
-   with help from a linked family member.
-3. A COPACO volunteer creates an excursion (place, date, capacity, accessibility, medical
-   requirements).
-4. The elderly user enrolls themselves, or a family member linked to their account enrolls on
-   their behalf.
-5. A health profile (mobility, cognitive condition, medications, emergency contact) is completed
-   before the trip — by the elderly user, a linked family member, or reused from prior data.
-6. The volunteer confirms enrollments via a consolidated list with per-participant health alerts.
-7. The system generates a digital acta: SHA-256 hash → IPFS → anchored on Ethereum mainnet,
-   signed by the COPACO institutional wallet.
-8. Anyone can publicly verify an acta by ID and confirm on Ethereum who created it, when, and
-   that it's unmodified.
+## Prototype vs. production scope
 
-### Design invariants to preserve when implementing
+The PRD recommends **Flutter/React Native** for the elderly-user mobile experience and a
+**separate React+TS** panel for coordinators, backed by NestJS + PostgreSQL + phone/OTP auth
+(PRD §4.1). The prototype in `app/` deliberately does not follow that split: it's a single
+Next.js web app with **no backend, no auth, and no persistence** (state lives in a React Context
+in memory and resets on full page reload — see `app/lib/store.tsx`). This was a scoped decision
+to get a clickable prototype in front of COPACO fast; it is not a recommendation to build
+production on Next.js instead of the PRD's stack. That decision gets made after usability testing
+(`docs/plan-desarrollo.md`, Fase 0).
 
-- **The elderly adult is the primary actor**, not a dependent — they can complete every step
-  alone. A linked family member is optional support, never a required intermediary.
-- **Family linking is initiated by the elderly user's own account**, not by COPACO — this is a
-  privacy/autonomy requirement, not an implementation detail.
-- **Health profile is a shared, always-editable object**: any of {the elderly user, a linked
-  family member, prior data} can populate it, and it must be re-editable before each excursion.
-- **Blockchain is fully invisible to end users.** Elderly users and volunteers never see or
-  interact with wallets/crypto — signing happens only via the COPACO multisig. Do not add
-  wallet-connect UI, per-user wallets, or crypto UX for these roles.
-- **The chatbot is the entry point and guide** for registration, enrollment, and health-profile
-  completion — not a bolt-on FAQ widget. It should orient users by role and walk them through
-  each critical step, escalating to a human when needed.
-- Every generated acta should be treated as authorship evidence for COPACO from day one — the
-  on-chain registry is a progressively-built document repository, not a batch/migration feature.
+## Architecture of the `app/` prototype
 
-### Explicitly out of scope for MVP
+- `app/lib/types.ts` — domain types: `Usuario` (role: adulto_mayor / familiar / coordinador),
+  `PerfilSalud`, `Excursion`, `Inscripcion`. These mirror the PRD's Épica A/B data shape, not a
+  finalized DB schema.
+- `app/lib/seed-data.ts` — fixed seed data (Elena Martínez as the elderly persona, Ana as her
+  linked family member, Raúl Gómez as coordinator, 3 seed excursions). All demo flows are built
+  around these fixtures.
+- `app/lib/store.tsx` — `StoreProvider`/`useStore()`: the entire "backend" is a React Context with
+  in-memory arrays and mutation functions (`inscribir`, `crearExcursion`, `guardarPerfilSalud`,
+  `marcarAsistencia`, etc). No API routes, no DB. `currentUserId` simulates auth via a plain
+  dropdown in the header — switching it does not persist across a hard navigation/reload, since
+  there's no session storage. This is a known, accepted limitation of the prototype, not a bug to
+  silently fix — if you add persistence, do it deliberately and update this section.
+- Routing splits public marketing from the demo app via an App Router route group:
+  - `app/app/page.tsx` — public **landing page** at `/` (no role switcher, no Header component).
+    Own top bar (`TopBar`), hero, animated impact stats, "cómo funciona", role breakdown, live
+    preview of upcoming excursions pulled from the store, trust section, coordinator CTA, footer.
+    Uses an `IntersectionObserver`-driven `.reveal`/`.reveal-left`/`.reveal-right` scroll-in
+    pattern (see `useReveal()` in this file and the keyframes in `globals.css`) — don't add new
+    animated sections without registering them with the same classes or they'll silently render
+    static.
+  - `app/app/(app)/layout.tsx` — layout for the authenticated-feeling demo app: renders `Header`
+    (logo, nav, the "Viendo como" role-switcher demo affordance) around all routes below.
+  - `app/app/(app)/excursiones/page.tsx` — excursion listing (Flujo 1, steps 1-2).
+  - `app/app/(app)/excursiones/[id]/page.tsx` — detail + conditional accessibility alert +
+    enrollment (Flujo 1, steps 3-5). The alert logic lives inline in this page: it fires when the
+    current user's `PerfilSalud.movilidad` isn't `independiente`/`no_aplica` AND the excursion has
+    any accessibility obstacle, or when the excursion itself requires a companion.
+  - `app/app/(app)/coordinador/nueva-excursion/page.tsx` — 4-step excursion creation wizard
+    (Flujo 2).
+  - `app/app/(app)/coordinador/excursiones/[id]/participantes/page.tsx` — participant panel with a
+    collapsed-by-default medical detail view and a check-in checkbox (Flujo 4). Gated to the
+    excursion's own coordinator via `currentUser.id === excursion.coordinadorId`.
+  - `app/app/(app)/perfil-salud/page.tsx` — segmented health profile form (Flujo 3). Resolves
+    "whose profile" via role: a `familiar` editing here edits the elderly user they're linked to
+    (`cuidaA`), not their own profile.
+- Design tokens live in `app/app/globals.css` as CSS custom properties (`--color-primary`,
+  `--color-accent`, `--radius-md`, `--shadow-md`, etc.) plus reusable component classes
+  (`.card`, `.btn-primary`/`.btn-secondary`/`.btn-accent`/`.btn-ghost-light`, `.badge*`,
+  `.alert-box`/`.success-box`/`.info-box`, `.step-number`) and an animation layer (keyframes +
+  `.animate-*`/`.reveal*`/`.text-shimmer`/`.card-gradient-border`/`.btn-glow` utilities used by the
+  landing page). Reach for an existing token/class before adding a new inline color or one-off
+  style — the accent/primary/ink-soft palette and shadow scale are meant to be reused everywhere,
+  not just on the landing.
+- Accessibility choices follow PRD §3.1 non-negotiables: 18px base font size, ≥44px tap targets
+  (all `.btn-*` classes), explicit two-step confirmation for irreversible actions (e.g. cancelling
+  an enrollment), and visible-not-buried privacy notices next to health data capture. The `Header`
+  uses a solid (non-transparent) background deliberately — an earlier translucent/backdrop-blur
+  version let scrolled page content bleed through and reduced legibility, which conflicts with the
+  AA/AAA contrast requirement for this user base; don't reintroduce transparency there without
+  re-checking contrast.
 
-Do not implement these unless the spec changes: directory of 30+ community services, migrating
-historical actas onto the blockchain, infrastructure-request module to the alcaldía, automatic
-push/email notifications, complex rescheduling/cancellation flows, multi-wallet support for
-individual volunteers, NFTs/tokenization of documents, installable PWA.
+## Verifying changes
 
-### Known operational risk
-
-Ethereum mainnet gas fees (~$5–20 USD per acta) mean the COPACO institutional wallet must stay
-funded. This is a product/ops concern (who funds the wallet), not something to solve with
-alternative chains or shortcuts without discussion — the spec commits to Ethereum mainnet with a
-Gnosis Safe multisig.
+There's no test suite — verify UI changes by running `npm run dev` in `app/` and driving the four
+flows above in a browser (or headless via Playwright/`chromium-cli`, which is how this prototype
+was last verified — no project-specific browser-driving skill exists yet in this repo).
