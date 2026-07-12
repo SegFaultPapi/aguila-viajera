@@ -106,12 +106,7 @@ export default function PerfilSaludPage() {
     <form onSubmit={handleGuardar} className="flex flex-col gap-5 pb-32">
       {/* Cabecera */}
       <div className="flex items-center gap-4">
-        <PlaceholderImage
-          label="Foto"
-          aspect="aspect-square"
-          shape="circle"
-          className="w-16 flex-shrink-0"
-        />
+        <PlaceholderImage label="Foto" shape="circle" size={64} />
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold">Perfil de salud</h1>
           <p className="mt-0.5 font-semibold truncate" style={{ color: "var(--color-primary)" }}>

@@ -97,28 +97,31 @@ function Hero() {
     <section
       className="relative overflow-hidden"
       style={{
-        background: "linear-gradient(150deg, #0369a1 0%, #0284c7 55%, #0ea5e9 100%)",
-        color: "white",
+        backgroundImage: "url('/images/ui/hero-sky-bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center top",
+        color: "var(--color-ink)",
       }}
     >
+      {/* overlay muy sutil para mejorar contraste del texto */}
       <div
-        className="orb animate-blob"
-        style={{ width: 480, height: 480, top: -120, right: -100, background: "rgba(234,179,8,0.22)" }}
-      />
-      <div
-        className="orb animate-blob delay-400"
-        style={{ width: 320, height: 320, bottom: -80, left: -60, background: "rgba(255,255,255,0.07)" }}
+        className="absolute inset-0"
+        style={{ background: "rgba(255,255,255,0.18)" }}
+        aria-hidden
       />
 
-      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 px-5 py-16 sm:flex-row sm:gap-12 sm:py-24">
+      <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-10 px-5 pt-16 pb-20 sm:flex-row sm:gap-12 sm:pt-24 sm:pb-28">
         <div className="flex flex-col gap-5 text-center sm:text-left sm:w-[35%] sm:flex-shrink-0">
-          <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl animate-fade-up delay-100">
+          <h1
+            className="text-4xl font-extrabold leading-tight sm:text-5xl animate-fade-up delay-100"
+            style={{ color: "var(--color-primary-dark)" }}
+          >
             Excursiones seguras para adultos mayores
           </h1>
 
           <p
             className="mx-auto max-w-md text-xl leading-relaxed sm:mx-0 animate-fade-up delay-200"
-            style={{ color: "rgba(255,255,255,0.97)" }}
+            style={{ color: "var(--color-ink)" }}
           >
             Inscríbete, comparte tu perfil de salud y viaja con respaldo. Todo en un solo lugar.
           </p>
@@ -127,18 +130,24 @@ function Hero() {
             <Link href="/excursiones" className="btn-accent btn-glow text-lg">
               Ver próximas excursiones
             </Link>
-            <Link href="/coordinador/nueva-excursion" className="btn-ghost-light text-lg">
+            <Link href="/coordinador/nueva-excursion" className="btn-secondary text-lg">
               Soy coordinador COPACO
             </Link>
           </div>
         </div>
 
-        <div className="w-full flex-1 animate-float">
+        <div className="w-full flex-1 animate-float relative">
           <ExcursionImg
             src="/images/ui/hero.jpg"
             alt="Grupo de adultos mayores abordando un autobús en una excursión comunitaria"
             aspect="aspect-[4/3]"
             className="w-full shadow-2xl"
+          />
+          <img
+            src="/images/ui/aguila-bienvenida.png"
+            alt="Águila Viajera dando la bienvenida"
+            className="pointer-events-none select-none absolute -bottom-10 -right-8 w-36 sm:w-44"
+            style={{ zIndex: 10, filter: "drop-shadow(0 8px 32px rgba(0,0,0,0.55))" }}
           />
         </div>
       </div>
@@ -262,37 +271,46 @@ function DestinosCards({
   return (
     <section className="px-5 py-16" style={{ background: "var(--color-bg-alt)" }}>
       <div className="mx-auto max-w-5xl">
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-8">
-          <h2 className="reveal text-3xl font-extrabold">Destinos COPACO</h2>
-          <Link href="/excursiones" className="reveal font-bold underline" style={{ color: "var(--color-primary)" }}>
+        <div className="reveal flex flex-wrap items-end justify-between gap-3 mb-8">
+          <h2 className="text-3xl font-extrabold">Destinos COPACO</h2>
+          <Link href="/excursiones" className="font-bold underline" style={{ color: "var(--color-primary)" }}>
             Ver todas
           </Link>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-3">
           {excursiones.map((ex, i) => (
-            <Link
-              key={ex.id}
-              href={`/excursiones/${ex.id}`}
-              className="reveal card card-interactive flex flex-col gap-0 overflow-hidden !p-0"
-              style={{ transitionDelay: `${i * 80}ms` }}
-            >
-              <ExcursionImg
-                src={`/images/excursiones/${ex.id}.jpg`}
-                alt={ex.destino}
-                aspect="aspect-[3/2]"
-                className="rounded-none rounded-t-xl"
-              />
-              <div className="flex flex-col gap-1.5 p-4">
-                <h3 className="text-lg font-extrabold leading-snug">{ex.destino}</h3>
-                <p
-                  className="text-sm line-clamp-2"
-                  style={{ color: "var(--color-ink-soft)" }}
-                >
-                  {ex.descripcionLarga}
-                </p>
-              </div>
-            </Link>
+            <div key={ex.id} className={`relative${i === 0 ? "" : ""}`}>
+              {i === 0 && (
+                <img
+                  src="/images/ui/aguila-bienvenida.png"
+                  alt="Águila Viajera explorando destinos"
+                  className="pointer-events-none select-none absolute -bottom-8 -left-6 w-32 sm:w-40"
+                  style={{ zIndex: 10, filter: "drop-shadow(0 6px 20px rgba(0,0,0,0.45))" }}
+                />
+              )}
+              <Link
+                href={`/excursiones/${ex.id}`}
+                className="reveal card card-interactive flex flex-col gap-0 overflow-hidden !p-0 h-full"
+                style={{ transitionDelay: `${i * 80}ms` }}
+              >
+                <ExcursionImg
+                  src={`/images/excursiones/${ex.id}.jpg`}
+                  alt={ex.destino}
+                  aspect="aspect-[3/2]"
+                  className="rounded-none rounded-t-xl"
+                />
+                <div className="flex flex-col gap-1.5 p-4">
+                  <h3 className="text-lg font-extrabold leading-snug">{ex.destino}</h3>
+                  <p
+                    className="text-sm line-clamp-2"
+                    style={{ color: "var(--color-ink-soft)" }}
+                  >
+                    {ex.descripcionLarga}
+                  </p>
+                </div>
+              </Link>
+            </div>
           ))}
           {excursiones.length === 0 && (
             <p style={{ color: "var(--color-ink-soft)" }}>Aún no hay destinos publicados.</p>
